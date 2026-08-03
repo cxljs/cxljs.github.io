@@ -58,7 +58,7 @@ WAL
 为了保证 MemTable 的数据不丢失，在写 MemTable 前会先写 WAL，重启时，重放 WAL 恢复 MemTable。正常情况一个 MemTable 对应一个 WAL，WAL 在 MemTable 成功落盘后删除。
 所以 WAL 应该有2个接口：AddRecord() 和 Replay()。
 LevelDB&rsquo;s WAL 分成 log::Writer 和 log::Reader 2个数据结构。" />
-  <meta name="author" content="cxljs" /><link rel="preload stylesheet" as="style" href="https://cxljs.github.io/main.min.css" />
+  <meta name="author" content="cxljs" /><link rel="preload stylesheet" as="style" href="https://cxljs.github.io/main.min.0ed59c72e3c71f4aab06535ca224bee5d10b738c54c8cc0b9d04d0f05f2a0657.css" />
 
   
   <link rel="preload" as="image" href="https://cxljs.github.io/theme.png" />
@@ -238,92 +238,92 @@ LevelDB’s WAL 分成 log::Writer 和 log::Reader 2个数据结构。">
   length: uint16      // little-endian; block size = 2^16 B = 64KB &gt; 32KB
   type: uint8         // one of Full, First, Middle, Last
   data: uint8[length]
-</code></pre><div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">// db/log_format.h
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">namespace</span> log {
+</code></pre><div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#57606a">// db/log_format.h
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span><span style="color:#cf222e">namespace</span> log <span style="color:#1f2328">{</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">enum</span> <span style="color:#a6e22e">RecordType</span> {
-</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// Zero is reserved for preallocated files
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  kZeroType <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">enum</span> <span style="color:#1f2328">RecordType</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#57606a">// Zero is reserved for preallocated files
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>  kZeroType <span style="color:#0550ae">=</span> <span style="color:#0550ae">0</span><span style="color:#1f2328">,</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  kFullType <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>,
+</span></span><span style="display:flex;"><span>  kFullType <span style="color:#0550ae">=</span> <span style="color:#0550ae">1</span><span style="color:#1f2328">,</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// For fragments
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  kFirstType <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>,
-</span></span><span style="display:flex;"><span>  kMiddleType <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>,
-</span></span><span style="display:flex;"><span>  kLastType <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>
-</span></span><span style="display:flex;"><span>};
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span> kMaxRecordType <span style="color:#f92672">=</span> kLastType;
+</span></span><span style="display:flex;"><span>  <span style="color:#57606a">// For fragments
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>  kFirstType <span style="color:#0550ae">=</span> <span style="color:#0550ae">2</span><span style="color:#1f2328">,</span>
+</span></span><span style="display:flex;"><span>  kMiddleType <span style="color:#0550ae">=</span> <span style="color:#0550ae">3</span><span style="color:#1f2328">,</span>
+</span></span><span style="display:flex;"><span>  kLastType <span style="color:#0550ae">=</span> <span style="color:#0550ae">4</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">};</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">static</span> <span style="color:#cf222e">const</span> <span style="color:#cf222e">int</span> kMaxRecordType <span style="color:#0550ae">=</span> kLastType<span style="color:#1f2328">;</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span> kBlockSize <span style="color:#f92672">=</span> <span style="color:#ae81ff">32768</span>;  <span style="color:#75715e">// 32KB
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">// Header is checksum (4 bytes), length (2 bytes), type (1 byte).
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">int</span> kHeaderSize <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">2</span> <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>;
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">static</span> <span style="color:#cf222e">const</span> <span style="color:#cf222e">int</span> kBlockSize <span style="color:#0550ae">=</span> <span style="color:#0550ae">32768</span><span style="color:#1f2328">;</span>  <span style="color:#57606a">// 32KB
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>
+</span></span><span style="display:flex;"><span><span style="color:#57606a">// Header is checksum (4 bytes), length (2 bytes), type (1 byte).
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span><span style="color:#cf222e">static</span> <span style="color:#cf222e">const</span> <span style="color:#cf222e">int</span> kHeaderSize <span style="color:#0550ae">=</span> <span style="color:#0550ae">4</span> <span style="color:#0550ae">+</span> <span style="color:#0550ae">2</span> <span style="color:#0550ae">+</span> <span style="color:#0550ae">1</span><span style="color:#1f2328">;</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>}  <span style="color:#75715e">// namespace log
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span>  <span style="color:#57606a">// namespace log
 </span></span></span></code></pre></div><h2 id="log-writer">Log Writer</h2>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">namespace</span> log {
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#cf222e">namespace</span> log <span style="color:#1f2328">{</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Writer</span> {
-</span></span><span style="display:flex;"><span> <span style="color:#66d9ef">public</span><span style="color:#f92672">:</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// Create a writer that will append data to &#34;*dest&#34;.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// &#34;*dest&#34; must be initially empty.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// &#34;*dest&#34; must remain live while this Writer is in use.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">explicit</span> Writer(WritableFile<span style="color:#f92672">*</span> dest);
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">class</span> <span style="color:#1f2328">Writer</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span> <span style="color:#cf222e">public</span><span style="color:#0550ae">:</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#57606a">// Create a writer that will append data to &#34;*dest&#34;.
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>  <span style="color:#57606a">// &#34;*dest&#34; must be initially empty.
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>  <span style="color:#57606a">// &#34;*dest&#34; must remain live while this Writer is in use.
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>  <span style="color:#cf222e">explicit</span> Writer<span style="color:#1f2328">(</span>WritableFile<span style="color:#0550ae">*</span> dest<span style="color:#1f2328">);</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// Create a writer that will append data to &#34;*dest&#34;.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// &#34;*dest&#34; must have initial length &#34;dest_length&#34;.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// &#34;*dest&#34; must remain live while this Writer is in use.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  Writer(WritableFile<span style="color:#f92672">*</span> dest, <span style="color:#66d9ef">uint64_t</span> dest_length);
+</span></span><span style="display:flex;"><span>  <span style="color:#57606a">// Create a writer that will append data to &#34;*dest&#34;.
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>  <span style="color:#57606a">// &#34;*dest&#34; must have initial length &#34;dest_length&#34;.
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>  <span style="color:#57606a">// &#34;*dest&#34; must remain live while this Writer is in use.
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>  Writer<span style="color:#1f2328">(</span>WritableFile<span style="color:#0550ae">*</span> dest<span style="color:#1f2328">,</span> <span style="color:#cf222e">uint64_t</span> dest_length<span style="color:#1f2328">);</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  Writer(<span style="color:#66d9ef">const</span> Writer<span style="color:#f92672">&amp;</span>) <span style="color:#f92672">=</span> <span style="color:#66d9ef">delete</span>;
-</span></span><span style="display:flex;"><span>  Writer<span style="color:#f92672">&amp;</span> <span style="color:#66d9ef">operator</span><span style="color:#f92672">=</span>(<span style="color:#66d9ef">const</span> Writer<span style="color:#f92672">&amp;</span>) <span style="color:#f92672">=</span> <span style="color:#66d9ef">delete</span>;
+</span></span><span style="display:flex;"><span>  Writer<span style="color:#1f2328">(</span><span style="color:#cf222e">const</span> Writer<span style="color:#0550ae">&amp;</span><span style="color:#1f2328">)</span> <span style="color:#0550ae">=</span> <span style="color:#cf222e">delete</span><span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>  Writer<span style="color:#0550ae">&amp;</span> <span style="color:#cf222e">operator</span><span style="color:#0550ae">=</span><span style="color:#1f2328">(</span><span style="color:#cf222e">const</span> Writer<span style="color:#0550ae">&amp;</span><span style="color:#1f2328">)</span> <span style="color:#0550ae">=</span> <span style="color:#cf222e">delete</span><span style="color:#1f2328">;</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">~</span>Writer();
+</span></span><span style="display:flex;"><span>  <span style="color:#0550ae">~</span>Writer<span style="color:#1f2328">();</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  Status <span style="color:#a6e22e">AddRecord</span>(<span style="color:#66d9ef">const</span> Slice<span style="color:#f92672">&amp;</span> slice);
+</span></span><span style="display:flex;"><span>  Status <span style="color:#6639ba">AddRecord</span><span style="color:#1f2328">(</span><span style="color:#cf222e">const</span> Slice<span style="color:#0550ae">&amp;</span> slice<span style="color:#1f2328">);</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span> <span style="color:#66d9ef">private</span><span style="color:#f92672">:</span>
-</span></span><span style="display:flex;"><span>  Status EmitPhysicalRecord(RecordType type, <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span><span style="color:#f92672">*</span> ptr, size_t length);
+</span></span><span style="display:flex;"><span> <span style="color:#cf222e">private</span><span style="color:#0550ae">:</span>
+</span></span><span style="display:flex;"><span>  Status EmitPhysicalRecord<span style="color:#1f2328">(</span>RecordType type<span style="color:#1f2328">,</span> <span style="color:#cf222e">const</span> <span style="color:#cf222e">char</span><span style="color:#0550ae">*</span> ptr<span style="color:#1f2328">,</span> size_t length<span style="color:#1f2328">);</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  WritableFile<span style="color:#f92672">*</span> dest_;
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">int</span> block_offset_;  <span style="color:#75715e">// Current offset in block
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
-</span></span><span style="display:flex;"><span>  <span style="color:#75715e">// crc32c values for all supported record types.  These are
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// pre-computed to reduce the overhead of computing the crc of the
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#75715e">// record type stored in the header.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  <span style="color:#66d9ef">uint32_t</span> type_crc_[kMaxRecordType <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>];
-</span></span><span style="display:flex;"><span>};
+</span></span><span style="display:flex;"><span>  WritableFile<span style="color:#0550ae">*</span> dest_<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#cf222e">int</span> block_offset_<span style="color:#1f2328">;</span>  <span style="color:#57606a">// Current offset in block
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>
+</span></span><span style="display:flex;"><span>  <span style="color:#57606a">// crc32c values for all supported record types.  These are
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>  <span style="color:#57606a">// pre-computed to reduce the overhead of computing the crc of the
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>  <span style="color:#57606a">// record type stored in the header.
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>  <span style="color:#cf222e">uint32_t</span> type_crc_<span style="color:#1f2328">[</span>kMaxRecordType <span style="color:#0550ae">+</span> <span style="color:#0550ae">1</span><span style="color:#1f2328">];</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">};</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>}  <span style="color:#75715e">// namespace log
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span>  <span style="color:#57606a">// namespace log
 </span></span></span></code></pre></div><p><code>WritableFile</code> 是在 fd 上封装一个 buffer，减少系统调用次数。</p>
 <p><code>log::Writer</code> 只有一个对外接口 <code>AddRecord()</code>，不需要实现并发安全，由调用者自己保证不会并发调用。<code>AddRecord()</code> 负责把数据分成一个或多个 record data。<code>EmitPhysicalRecord()</code> 负责把一个 record data + record header 写到 <code>dest_</code>.</p>
 <p><code>AddRecord()</code> 保证把数据写到 <code>dest_</code>，但是没有强制落盘，所以系统奔溃可能会导致写的 record 丢失。如果要强制落盘，要设置 <code>options.sync = true</code> 让 <code>DBImpl::Write</code> 调用完 <code>AddRecord()</code> 后调用 <code>logfile_.Sync()</code>。</p>
 <p><code>DBImpl::Write</code> 核心逻辑：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>    <span style="color:#75715e">// Add to log and apply to memtable.  We can release the lock
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// during this phase since &amp;w is currently responsible for logging
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// and protects against concurrent loggers and concurrent writes
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">// into mem_.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    {
-</span></span><span style="display:flex;"><span>      mutex_.Unlock();
-</span></span><span style="display:flex;"><span>      status <span style="color:#f92672">=</span> log_<span style="color:#f92672">-&gt;</span>AddRecord(WriteBatchInternal<span style="color:#f92672">::</span>Contents(write_batch));
-</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">bool</span> sync_error <span style="color:#f92672">=</span> false;
-</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (status.ok() <span style="color:#f92672">&amp;&amp;</span> options.sync) {
-</span></span><span style="display:flex;"><span>        status <span style="color:#f92672">=</span> logfile_<span style="color:#f92672">-&gt;</span>Sync();
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>status.ok()) {
-</span></span><span style="display:flex;"><span>          sync_error <span style="color:#f92672">=</span> true;
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>      }
-</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (status.ok()) {
-</span></span><span style="display:flex;"><span>        status <span style="color:#f92672">=</span> WriteBatchInternal<span style="color:#f92672">::</span>InsertInto(write_batch, mem_);
-</span></span><span style="display:flex;"><span>      }
-</span></span><span style="display:flex;"><span>      mutex_.Lock();
-</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">if</span> (sync_error) {
-</span></span><span style="display:flex;"><span>        <span style="color:#75715e">// The state of the log file is indeterminate: the log record we
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">// just added may or may not show up when the DB is re-opened.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">// So we force the DB into a mode where all future writes fail.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        RecordBackgroundError(status);
-</span></span><span style="display:flex;"><span>      }
-</span></span><span style="display:flex;"><span>    }
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span>    <span style="color:#57606a">// Add to log and apply to memtable.  We can release the lock
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>    <span style="color:#57606a">// during this phase since &amp;w is currently responsible for logging
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>    <span style="color:#57606a">// and protects against concurrent loggers and concurrent writes
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>    <span style="color:#57606a">// into mem_.
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>    <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>      mutex_<span style="color:#1f2328">.</span>Unlock<span style="color:#1f2328">();</span>
+</span></span><span style="display:flex;"><span>      status <span style="color:#0550ae">=</span> log_<span style="color:#0550ae">-&gt;</span>AddRecord<span style="color:#1f2328">(</span>WriteBatchInternal<span style="color:#0550ae">::</span>Contents<span style="color:#1f2328">(</span>write_batch<span style="color:#1f2328">));</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#cf222e">bool</span> sync_error <span style="color:#0550ae">=</span> <span style="color:#6639ba">false</span><span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#cf222e">if</span> <span style="color:#1f2328">(</span>status<span style="color:#1f2328">.</span>ok<span style="color:#1f2328">()</span> <span style="color:#0550ae">&amp;&amp;</span> options<span style="color:#1f2328">.</span>sync<span style="color:#1f2328">)</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>        status <span style="color:#0550ae">=</span> logfile_<span style="color:#0550ae">-&gt;</span>Sync<span style="color:#1f2328">();</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#cf222e">if</span> <span style="color:#1f2328">(</span><span style="color:#0550ae">!</span>status<span style="color:#1f2328">.</span>ok<span style="color:#1f2328">())</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>          sync_error <span style="color:#0550ae">=</span> <span style="color:#6639ba">true</span><span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#1f2328">}</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#1f2328">}</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#cf222e">if</span> <span style="color:#1f2328">(</span>status<span style="color:#1f2328">.</span>ok<span style="color:#1f2328">())</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>        status <span style="color:#0550ae">=</span> WriteBatchInternal<span style="color:#0550ae">::</span>InsertInto<span style="color:#1f2328">(</span>write_batch<span style="color:#1f2328">,</span> mem_<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#1f2328">}</span>
+</span></span><span style="display:flex;"><span>      mutex_<span style="color:#1f2328">.</span>Lock<span style="color:#1f2328">();</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#cf222e">if</span> <span style="color:#1f2328">(</span>sync_error<span style="color:#1f2328">)</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#57606a">// The state of the log file is indeterminate: the log record we
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>        <span style="color:#57606a">// just added may or may not show up when the DB is re-opened.
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>        <span style="color:#57606a">// So we force the DB into a mode where all future writes fail.
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>        RecordBackgroundError<span style="color:#1f2328">(</span>status<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span>      <span style="color:#1f2328">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#1f2328">}</span>
 </span></span></code></pre></div><h2 id="log-reader">Log Reader</h2>
 <p>读取 log file。</p>
 </section>

@@ -57,7 +57,7 @@ sds.[h/c]实现变长字符串类型，是内部最常用的数据结构，很�
 变长、剩余长度不足时，会重新申请(len &#43; add_len) * 2的内存
 
 anet.[h/c]封装socket相关的系统调用，方便使用：" />
-  <meta name="author" content="cxljs" /><link rel="preload stylesheet" as="style" href="https://cxljs.github.io/main.min.css" />
+  <meta name="author" content="cxljs" /><link rel="preload stylesheet" as="style" href="https://cxljs.github.io/main.min.0ed59c72e3c71f4aab06535ca224bee5d10b738c54c8cc0b9d04d0f05f2a0657.css" />
 
   
   <link rel="preload" as="image" href="https://cxljs.github.io/theme.png" />
@@ -247,39 +247,39 @@ sds.[h/c]实现变长字符串类型，是内部最常用的数据结构，很�
 <p>Redis 基于事件驱动，用单线程执行主流程(处理请求)，还有少量线程执行关闭文件、回收内存等异步任务，Redis 6.0 使用多个线程(可配置)处理 I/O.</p>
 <p>Redis 的事件驱动库本质是 IO 多路复用 + 执行回调函数，代码在<code>ae.[h/c]</code>(事件处理层), <code>ae_epoll.c/ae_kqueue.c/ae_select.c</code>(解耦 IO 多路复用和具体系统调用)。</p>
 <p>异步事件库用数据结构 <code>aeEventLoop</code> 维护一个 epoll 实例 + (fd, 监听的状态，处理函数) 的集合。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">aeApiState</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> epfd;  <span style="color:#75715e">/* `epoll_create`返回的 epoll fd */</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">epoll_event</span> events[AE_SETSIZE];  <span style="color:#75715e">/* 存储`epoll_wait`结果 */</span>
-</span></span><span style="display:flex;"><span>} aeApiState;
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#cf222e">typedef</span> <span style="color:#cf222e">struct</span> <span style="color:#1f2328">aeApiState</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">int</span> epfd<span style="color:#1f2328">;</span>  <span style="color:#57606a">/* `epoll_create`返回的 epoll fd */</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">struct</span> <span style="color:#1f2328">epoll_event</span> events<span style="color:#1f2328">[</span>AE_SETSIZE<span style="color:#1f2328">];</span>  <span style="color:#57606a">/* 存储`epoll_wait`结果 */</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span> aeApiState<span style="color:#1f2328">;</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">aeFileEvent</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> mask; <span style="color:#75715e">/* one of AE_(READABLE|WRITABLE) */</span>
-</span></span><span style="display:flex;"><span>    aeFileProc <span style="color:#f92672">*</span>rfileProc;
-</span></span><span style="display:flex;"><span>    aeFileProc <span style="color:#f92672">*</span>wfileProc;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>clientData; <span style="color:#75715e">/* event loop 内部没有用到，类似 Go context */</span>
-</span></span><span style="display:flex;"><span>} aeFileEvent;
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">typedef</span> <span style="color:#cf222e">struct</span> <span style="color:#1f2328">aeFileEvent</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">int</span> mask<span style="color:#1f2328">;</span> <span style="color:#57606a">/* one of AE_(READABLE|WRITABLE) */</span>
+</span></span><span style="display:flex;"><span>    aeFileProc <span style="color:#0550ae">*</span>rfileProc<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    aeFileProc <span style="color:#0550ae">*</span>wfileProc<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">void</span> <span style="color:#0550ae">*</span>clientData<span style="color:#1f2328">;</span> <span style="color:#57606a">/* event loop 内部没有用到，类似 Go context */</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span> aeFileEvent<span style="color:#1f2328">;</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">/* Time event structure */</span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">aeTimeEvent</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">long</span> <span style="color:#66d9ef">long</span> id; <span style="color:#75715e">/* time event identifier. */</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">long</span> when_sec; <span style="color:#75715e">/* seconds */</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">long</span> when_ms; <span style="color:#75715e">/* milliseconds */</span>
-</span></span><span style="display:flex;"><span>    aeTimeProc <span style="color:#f92672">*</span>timeProc;
-</span></span><span style="display:flex;"><span>    aeEventFinalizerProc <span style="color:#f92672">*</span>finalizerProc;  <span style="color:#75715e">/* 删除时执行 */</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>clientData;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">aeTimeEvent</span> <span style="color:#f92672">*</span>next;
-</span></span><span style="display:flex;"><span>} aeTimeEvent;
+</span></span><span style="display:flex;"><span><span style="color:#57606a">/* Time event structure */</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">typedef</span> <span style="color:#cf222e">struct</span> <span style="color:#1f2328">aeTimeEvent</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">long</span> <span style="color:#cf222e">long</span> id<span style="color:#1f2328">;</span> <span style="color:#57606a">/* time event identifier. */</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">long</span> when_sec<span style="color:#1f2328">;</span> <span style="color:#57606a">/* seconds */</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">long</span> when_ms<span style="color:#1f2328">;</span> <span style="color:#57606a">/* milliseconds */</span>
+</span></span><span style="display:flex;"><span>    aeTimeProc <span style="color:#0550ae">*</span>timeProc<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    aeEventFinalizerProc <span style="color:#0550ae">*</span>finalizerProc<span style="color:#1f2328">;</span>  <span style="color:#57606a">/* 删除时执行 */</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">void</span> <span style="color:#0550ae">*</span>clientData<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">struct</span> <span style="color:#1f2328">aeTimeEvent</span> <span style="color:#0550ae">*</span>next<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span> aeTimeEvent<span style="color:#1f2328">;</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">aeEventLoop</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> maxfd;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">long</span> <span style="color:#66d9ef">long</span> timeEventNextId;
-</span></span><span style="display:flex;"><span>    aeFileEvent events[AE_SETSIZE]; <span style="color:#75715e">/* Registered events */</span>
-</span></span><span style="display:flex;"><span>    aeFiredEvent fired[AE_SETSIZE]; <span style="color:#75715e">/* Fired events */</span>
-</span></span><span style="display:flex;"><span>    aeTimeEvent <span style="color:#f92672">*</span>timeEventHead;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> stop;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>apidata; <span style="color:#75715e">/* 指向一个 aeApiState 对象 */</span>
-</span></span><span style="display:flex;"><span>    aeBeforeSleepProc <span style="color:#f92672">*</span>beforesleep;
-</span></span><span style="display:flex;"><span>} aeEventLoop;
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">typedef</span> <span style="color:#cf222e">struct</span> <span style="color:#1f2328">aeEventLoop</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">int</span> maxfd<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">long</span> <span style="color:#cf222e">long</span> timeEventNextId<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    aeFileEvent events<span style="color:#1f2328">[</span>AE_SETSIZE<span style="color:#1f2328">];</span> <span style="color:#57606a">/* Registered events */</span>
+</span></span><span style="display:flex;"><span>    aeFiredEvent fired<span style="color:#1f2328">[</span>AE_SETSIZE<span style="color:#1f2328">];</span> <span style="color:#57606a">/* Fired events */</span>
+</span></span><span style="display:flex;"><span>    aeTimeEvent <span style="color:#0550ae">*</span>timeEventHead<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">int</span> stop<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">void</span> <span style="color:#0550ae">*</span>apidata<span style="color:#1f2328">;</span> <span style="color:#57606a">/* 指向一个 aeApiState 对象 */</span>
+</span></span><span style="display:flex;"><span>    aeBeforeSleepProc <span style="color:#0550ae">*</span>beforesleep<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span> aeEventLoop<span style="color:#1f2328">;</span>
 </span></span></code></pre></div><p><code>AE_SETSIZE</code>值很重要，决定了 max clients count。<code>aeEventLoop</code>需要维护的 fd 数 = max clients count + 少量内部 fd (listen fd, epoll fd, log file, rdb/aof file, &amp;c)，默认设置<code>AE_SETSIZE = 1024 * 10</code>(10k)，在这个 <a href="https://github.com/redis/redis/commit/e074416be49947c7bab5e237fab7210441bd99e5">commit</a> 改为配置值，<code>redis.conf</code>配置<code>max_clients</code>(默认值是 10000), 服务启动时设置<code>AE_SETSIZE = max_clients + 32</code>，支持运行时动态设置。</p>
 <p>由于 linux 进程默认最大打开文件数是 1024，服务启动时需要修改这个数值 (使用 glibc&rsquo;s <code>setrlimit</code>).</p>
 <p><code>aeEventLoop</code>维护2种类型的事件:</p>
@@ -299,50 +299,50 @@ sds.[h/c]实现变长字符串类型，是内部最常用的数据结构，很�
 </li>
 </ol>
 <p><code>aeEventLoop</code>的接口也很清晰, create、add event、delete event、delete.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">/* 初始化相关数据，调用 epoll_create */</span>
-</span></span><span style="display:flex;"><span>aeEventLoop <span style="color:#f92672">*</span><span style="color:#a6e22e">aeCreateEventLoop</span>(<span style="color:#66d9ef">void</span>);
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">aeDeleteEventLoop</span>(aeEventLoop <span style="color:#f92672">*</span>eventLoop);
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">aeStop</span>(aeEventLoop <span style="color:#f92672">*</span>eventLoop);
-</span></span><span style="display:flex;"><span><span style="color:#75715e">/* create/delete event 实现: 维护相关数据，调用 epoll_ctl */</span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">aeCreateFileEvent</span>(aeEventLoop <span style="color:#f92672">*</span>eventLoop, <span style="color:#66d9ef">int</span> fd, <span style="color:#66d9ef">int</span> mask,
-</span></span><span style="display:flex;"><span>        aeFileProc <span style="color:#f92672">*</span>proc, <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>clientData);
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">aeDeleteFileEvent</span>(aeEventLoop <span style="color:#f92672">*</span>eventLoop, <span style="color:#66d9ef">int</span> fd, <span style="color:#66d9ef">int</span> mask);
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">long</span> <span style="color:#66d9ef">long</span> <span style="color:#a6e22e">aeCreateTimeEvent</span>(aeEventLoop <span style="color:#f92672">*</span>eventLoop, <span style="color:#66d9ef">long</span> <span style="color:#66d9ef">long</span> milliseconds,
-</span></span><span style="display:flex;"><span>        aeTimeProc <span style="color:#f92672">*</span>proc, <span style="color:#66d9ef">void</span> <span style="color:#f92672">*</span>clientData,
-</span></span><span style="display:flex;"><span>        aeEventFinalizerProc <span style="color:#f92672">*</span>finalizerProc);
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">aeDeleteTimeEvent</span>(aeEventLoop <span style="color:#f92672">*</span>eventLoop, <span style="color:#66d9ef">long</span> <span style="color:#66d9ef">long</span> id);
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">aeProcessEvents</span>(aeEventLoop <span style="color:#f92672">*</span>eventLoop, <span style="color:#66d9ef">int</span> flags);
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">aeWait</span>(<span style="color:#66d9ef">int</span> fd, <span style="color:#66d9ef">int</span> mask, <span style="color:#66d9ef">long</span> <span style="color:#66d9ef">long</span> milliseconds);
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">aeMain</span>(aeEventLoop <span style="color:#f92672">*</span>eventLoop);
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">aeGetApiName</span>(<span style="color:#66d9ef">void</span>);
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">aeSetBeforeSleepProc</span>(aeEventLoop <span style="color:#f92672">*</span>eventLoop, aeBeforeSleepProc <span style="color:#f92672">*</span>beforesleep);
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#57606a">/* 初始化相关数据，调用 epoll_create */</span>
+</span></span><span style="display:flex;"><span>aeEventLoop <span style="color:#0550ae">*</span><span style="color:#6639ba">aeCreateEventLoop</span><span style="color:#1f2328">(</span><span style="color:#cf222e">void</span><span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">void</span> <span style="color:#6639ba">aeDeleteEventLoop</span><span style="color:#1f2328">(</span>aeEventLoop <span style="color:#0550ae">*</span>eventLoop<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">void</span> <span style="color:#6639ba">aeStop</span><span style="color:#1f2328">(</span>aeEventLoop <span style="color:#0550ae">*</span>eventLoop<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#57606a">/* create/delete event 实现: 维护相关数据，调用 epoll_ctl */</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">int</span> <span style="color:#6639ba">aeCreateFileEvent</span><span style="color:#1f2328">(</span>aeEventLoop <span style="color:#0550ae">*</span>eventLoop<span style="color:#1f2328">,</span> <span style="color:#cf222e">int</span> fd<span style="color:#1f2328">,</span> <span style="color:#cf222e">int</span> mask<span style="color:#1f2328">,</span>
+</span></span><span style="display:flex;"><span>        aeFileProc <span style="color:#0550ae">*</span>proc<span style="color:#1f2328">,</span> <span style="color:#cf222e">void</span> <span style="color:#0550ae">*</span>clientData<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">void</span> <span style="color:#6639ba">aeDeleteFileEvent</span><span style="color:#1f2328">(</span>aeEventLoop <span style="color:#0550ae">*</span>eventLoop<span style="color:#1f2328">,</span> <span style="color:#cf222e">int</span> fd<span style="color:#1f2328">,</span> <span style="color:#cf222e">int</span> mask<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">long</span> <span style="color:#cf222e">long</span> <span style="color:#6639ba">aeCreateTimeEvent</span><span style="color:#1f2328">(</span>aeEventLoop <span style="color:#0550ae">*</span>eventLoop<span style="color:#1f2328">,</span> <span style="color:#cf222e">long</span> <span style="color:#cf222e">long</span> milliseconds<span style="color:#1f2328">,</span>
+</span></span><span style="display:flex;"><span>        aeTimeProc <span style="color:#0550ae">*</span>proc<span style="color:#1f2328">,</span> <span style="color:#cf222e">void</span> <span style="color:#0550ae">*</span>clientData<span style="color:#1f2328">,</span>
+</span></span><span style="display:flex;"><span>        aeEventFinalizerProc <span style="color:#0550ae">*</span>finalizerProc<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">int</span> <span style="color:#6639ba">aeDeleteTimeEvent</span><span style="color:#1f2328">(</span>aeEventLoop <span style="color:#0550ae">*</span>eventLoop<span style="color:#1f2328">,</span> <span style="color:#cf222e">long</span> <span style="color:#cf222e">long</span> id<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">int</span> <span style="color:#6639ba">aeProcessEvents</span><span style="color:#1f2328">(</span>aeEventLoop <span style="color:#0550ae">*</span>eventLoop<span style="color:#1f2328">,</span> <span style="color:#cf222e">int</span> flags<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">int</span> <span style="color:#6639ba">aeWait</span><span style="color:#1f2328">(</span><span style="color:#cf222e">int</span> fd<span style="color:#1f2328">,</span> <span style="color:#cf222e">int</span> mask<span style="color:#1f2328">,</span> <span style="color:#cf222e">long</span> <span style="color:#cf222e">long</span> milliseconds<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">void</span> <span style="color:#6639ba">aeMain</span><span style="color:#1f2328">(</span>aeEventLoop <span style="color:#0550ae">*</span>eventLoop<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">char</span> <span style="color:#0550ae">*</span><span style="color:#6639ba">aeGetApiName</span><span style="color:#1f2328">(</span><span style="color:#cf222e">void</span><span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">void</span> <span style="color:#6639ba">aeSetBeforeSleepProc</span><span style="color:#1f2328">(</span>aeEventLoop <span style="color:#0550ae">*</span>eventLoop<span style="color:#1f2328">,</span> aeBeforeSleepProc <span style="color:#0550ae">*</span>beforesleep<span style="color:#1f2328">);</span>
 </span></span></code></pre></div><p>Redis server 在启动时创建一个<code>aeEventLoop</code>对象，添加 (listen fd, readable, <code>acceptHandler</code>) 和一个周期性任务，初始化完成后，调用<code>aeMain</code>，由<code>aeEventLoop</code>监听 listen fd, 调用对应处理函数，接收 client fd，处理请求，不断 add/delete client fd.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">aeMain</span>(aeEventLoop <span style="color:#f92672">*</span>eventLoop) {
-</span></span><span style="display:flex;"><span>    eventLoop<span style="color:#f92672">-&gt;</span>stop <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">while</span> (<span style="color:#f92672">!</span>eventLoop<span style="color:#f92672">-&gt;</span>stop) {
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> (eventLoop<span style="color:#f92672">-&gt;</span>beforesleep <span style="color:#f92672">!=</span> NULL)
-</span></span><span style="display:flex;"><span>            eventLoop<span style="color:#f92672">-&gt;</span>beforesleep(eventLoop);
-</span></span><span style="display:flex;"><span>        aeProcessEvents(eventLoop, AE_ALL_EVENTS);
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>}
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#cf222e">void</span> <span style="color:#6639ba">aeMain</span><span style="color:#1f2328">(</span>aeEventLoop <span style="color:#0550ae">*</span>eventLoop<span style="color:#1f2328">)</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    eventLoop<span style="color:#0550ae">-&gt;</span>stop <span style="color:#0550ae">=</span> <span style="color:#0550ae">0</span><span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">while</span> <span style="color:#1f2328">(</span><span style="color:#0550ae">!</span>eventLoop<span style="color:#0550ae">-&gt;</span>stop<span style="color:#1f2328">)</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>        <span style="color:#cf222e">if</span> <span style="color:#1f2328">(</span>eventLoop<span style="color:#0550ae">-&gt;</span>beforesleep <span style="color:#0550ae">!=</span> <span style="color:#6639ba">NULL</span><span style="color:#1f2328">)</span>
+</span></span><span style="display:flex;"><span>            eventLoop<span style="color:#0550ae">-&gt;</span>beforesleep<span style="color:#1f2328">(</span>eventLoop<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span>        aeProcessEvents<span style="color:#1f2328">(</span>eventLoop<span style="color:#1f2328">,</span> AE_ALL_EVENTS<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#1f2328">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span>
 </span></span></code></pre></div><p>还有一个点，我们前面一直说 epoll 实现 IO 多路复用，准确来说，是会根据操作系统选择最合适的系统调用。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">/* from ae.c */</span>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#57606a">/* from ae.c */</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">/* Include the best multiplexing layer supported by this system.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"> * The following should be ordered by performances, descending. */</span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">#ifdef HAVE_EVPORT
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;ae_evport.c&#34;</span><span style="color:#75715e">
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#else
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">#ifdef HAVE_EPOLL
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;ae_epoll.c&#34;</span><span style="color:#75715e">
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">#else
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">#ifdef HAVE_KQUEUE
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;ae_kqueue.c&#34;</span><span style="color:#75715e">
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">#else
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">#include</span> <span style="color:#75715e">&#34;ae_select.c&#34;</span><span style="color:#75715e">
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        <span style="color:#75715e">#endif
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#75715e">#endif
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#endif
+</span></span><span style="display:flex;"><span><span style="color:#57606a">/* Include the best multiplexing layer supported by this system.
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"> * The following should be ordered by performances, descending. */</span>
+</span></span><span style="display:flex;"><span><span style="color:#57606a">#ifdef HAVE_EVPORT
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a">#include</span> <span style="color:#57606a">&#34;ae_evport.c&#34;</span><span style="color:#57606a">
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a">#else
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>    <span style="color:#57606a">#ifdef HAVE_EPOLL
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>    <span style="color:#57606a">#include</span> <span style="color:#57606a">&#34;ae_epoll.c&#34;</span><span style="color:#57606a">
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>    <span style="color:#57606a">#else
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>        <span style="color:#57606a">#ifdef HAVE_KQUEUE
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>        <span style="color:#57606a">#include</span> <span style="color:#57606a">&#34;ae_kqueue.c&#34;</span><span style="color:#57606a">
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>        <span style="color:#57606a">#else
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>        <span style="color:#57606a">#include</span> <span style="color:#57606a">&#34;ae_select.c&#34;</span><span style="color:#57606a">
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>        <span style="color:#57606a">#endif
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>    <span style="color:#57606a">#endif
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a">#endif
 </span></span></span></code></pre></div><p>代码直接用宏 include &ldquo;*.c&rdquo;，可能是 C 特色，C++ 就不建议这样了。</p>
 <h2 id="处理请求">处理请求</h2>
 <p>Server 初始化时调用<code>anetTcpServer</code>创建一个 listen fd，并把 (fd, readable, <code>acceptHandler</code>) 加到 event loop，初始化完成后，调用<code>aeMain</code>。</p>
@@ -358,13 +358,13 @@ sds.[h/c]实现变长字符串类型，是内部最常用的数据结构，很�
 <li><code>anetAccept</code>获取 client fd</li>
 <li><code>createClient</code> 创建 redis client 对象</li>
 <li>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">if</span> (server.maxclients <span style="color:#f92672">&amp;&amp;</span> listLength(server.clients) <span style="color:#f92672">&gt;</span> server.maxclients) {
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>err <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;-ERR max number of clients reached</span><span style="color:#ae81ff">\r\n</span><span style="color:#e6db74">&#34;</span>;
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">if</span> (write(c<span style="color:#f92672">-&gt;</span>fd,err,strlen(err)) <span style="color:#f92672">==</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>) {
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/* Nothing to do, Just to avoid the warning... */</span>
-</span></span><span style="display:flex;"><span>  }
-</span></span><span style="display:flex;"><span>  freeClient(c);
-</span></span><span style="display:flex;"><span>}
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#cf222e">if</span> <span style="color:#1f2328">(</span>server<span style="color:#1f2328">.</span>maxclients <span style="color:#0550ae">&amp;&amp;</span> listLength<span style="color:#1f2328">(</span>server<span style="color:#1f2328">.</span>clients<span style="color:#1f2328">)</span> <span style="color:#0550ae">&gt;</span> server<span style="color:#1f2328">.</span>maxclients<span style="color:#1f2328">)</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#cf222e">char</span> <span style="color:#0550ae">*</span>err <span style="color:#0550ae">=</span> <span style="color:#0a3069">&#34;-ERR max number of clients reached</span><span style="color:#0a3069">\r\n</span><span style="color:#0a3069">&#34;</span><span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#cf222e">if</span> <span style="color:#1f2328">(</span>write<span style="color:#1f2328">(</span>c<span style="color:#0550ae">-&gt;</span>fd<span style="color:#1f2328">,</span>err<span style="color:#1f2328">,</span>strlen<span style="color:#1f2328">(</span>err<span style="color:#1f2328">))</span> <span style="color:#0550ae">==</span> <span style="color:#0550ae">-</span><span style="color:#0550ae">1</span><span style="color:#1f2328">)</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#57606a">/* Nothing to do, Just to avoid the warning... */</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#1f2328">}</span>
+</span></span><span style="display:flex;"><span>  freeClient<span style="color:#1f2328">(</span>c<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span>
 </span></span></code></pre></div></li>
 </ol>
 <p><code>redisClient</code> 维护一条连接的上下文，包括读取请求的 buffer，发送回复的 buffer，执行的命令等。</p>
@@ -379,32 +379,32 @@ sds.[h/c]实现变长字符串类型，是内部最常用的数据结构，很�
 <p><code>epoll_wait</code>每一轮轮询，如果 listen fd 可读，会调用一次<code>accept</code>获取一个 client fd，如果同时有大量 client fd 在等待<code>accept</code>，需要多次轮询才能处理完，优化：如果 listen fd 可读，调用多次<code>accept</code>，直到没有 client fd。</p></blockquote>
 <h3 id="读取请求">读取请求</h3>
 <p>对于 (fd, readable, <code>readQueryFromCLient</code>)，当收到请求后，<code>readQueryFromClient</code>会被调用，从 socket&rsquo;s buffer 读取数据到 redis client&rsquo;s <code>querybuf</code>，注意 syscall read 的返回值:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#75715e">/* Return the number read, -1 for errors or 0 for EOF. */</span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">/* 非阻塞读，所以当 nread = -1 时，需要判断 errno 是不是 EAGAIN */</span>
-</span></span><span style="display:flex;"><span>nread <span style="color:#f92672">=</span> read(fd, buf, REDIS_IOBUF_LEN);
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> (nread <span style="color:#f92672">==</span> <span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>) {
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">if</span> (errno <span style="color:#f92672">==</span> EAGAIN) {
-</span></span><span style="display:flex;"><span>    nread <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
-</span></span><span style="display:flex;"><span>  } <span style="color:#66d9ef">else</span> {
-</span></span><span style="display:flex;"><span>    redisLog(REDIS_VERBOSE, <span style="color:#e6db74">&#34;Reading from client: %s&#34;</span>,strerror(errno));
-</span></span><span style="display:flex;"><span>    freeClient(c);
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span>;
-</span></span><span style="display:flex;"><span>  }
-</span></span><span style="display:flex;"><span>} <span style="color:#66d9ef">else</span> <span style="color:#a6e22e">if</span> (nread <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>) {
-</span></span><span style="display:flex;"><span>  redisLog(REDIS_VERBOSE, <span style="color:#e6db74">&#34;Client closed connection&#34;</span>);
-</span></span><span style="display:flex;"><span>  freeClient(c);
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">return</span>;
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> (nread) {
-</span></span><span style="display:flex;"><span>  c<span style="color:#f92672">-&gt;</span>querybuf <span style="color:#f92672">=</span> sdscatlen(c<span style="color:#f92672">-&gt;</span>querybuf, buf, nread);
-</span></span><span style="display:flex;"><span>  c<span style="color:#f92672">-&gt;</span>lastinteraction <span style="color:#f92672">=</span> time(NULL);
-</span></span><span style="display:flex;"><span>} <span style="color:#66d9ef">else</span> {
-</span></span><span style="display:flex;"><span>  <span style="color:#75715e">/* 非阻塞读，读不到数据，直接返回. */</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">return</span>;
-</span></span><span style="display:flex;"><span>}
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#57606a">/* Return the number read, -1 for errors or 0 for EOF. */</span>
+</span></span><span style="display:flex;"><span><span style="color:#57606a">/* 非阻塞读，所以当 nread = -1 时，需要判断 errno 是不是 EAGAIN */</span>
+</span></span><span style="display:flex;"><span>nread <span style="color:#0550ae">=</span> read<span style="color:#1f2328">(</span>fd<span style="color:#1f2328">,</span> buf<span style="color:#1f2328">,</span> REDIS_IOBUF_LEN<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">if</span> <span style="color:#1f2328">(</span>nread <span style="color:#0550ae">==</span> <span style="color:#0550ae">-</span><span style="color:#0550ae">1</span><span style="color:#1f2328">)</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#cf222e">if</span> <span style="color:#1f2328">(</span>errno <span style="color:#0550ae">==</span> EAGAIN<span style="color:#1f2328">)</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    nread <span style="color:#0550ae">=</span> <span style="color:#0550ae">0</span><span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#1f2328">}</span> <span style="color:#cf222e">else</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    redisLog<span style="color:#1f2328">(</span>REDIS_VERBOSE<span style="color:#1f2328">,</span> <span style="color:#0a3069">&#34;Reading from client: %s&#34;</span><span style="color:#1f2328">,</span>strerror<span style="color:#1f2328">(</span>errno<span style="color:#1f2328">));</span>
+</span></span><span style="display:flex;"><span>    freeClient<span style="color:#1f2328">(</span>c<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">return</span><span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#1f2328">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span> <span style="color:#cf222e">else</span> <span style="color:#6639ba">if</span> <span style="color:#1f2328">(</span>nread <span style="color:#0550ae">==</span> <span style="color:#0550ae">0</span><span style="color:#1f2328">)</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>  redisLog<span style="color:#1f2328">(</span>REDIS_VERBOSE<span style="color:#1f2328">,</span> <span style="color:#0a3069">&#34;Client closed connection&#34;</span><span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span>  freeClient<span style="color:#1f2328">(</span>c<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#cf222e">return</span><span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">if</span> <span style="color:#1f2328">(</span>nread<span style="color:#1f2328">)</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>  c<span style="color:#0550ae">-&gt;</span>querybuf <span style="color:#0550ae">=</span> sdscatlen<span style="color:#1f2328">(</span>c<span style="color:#0550ae">-&gt;</span>querybuf<span style="color:#1f2328">,</span> buf<span style="color:#1f2328">,</span> nread<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span>  c<span style="color:#0550ae">-&gt;</span>lastinteraction <span style="color:#0550ae">=</span> time<span style="color:#1f2328">(</span><span style="color:#6639ba">NULL</span><span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span> <span style="color:#cf222e">else</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#57606a">/* 非阻塞读，读不到数据，直接返回. */</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#cf222e">return</span><span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span>
 </span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">if</span> (<span style="color:#f92672">!</span>(c<span style="color:#f92672">-&gt;</span>flags <span style="color:#f92672">&amp;</span> REDIS_BLOCKED))
-</span></span><span style="display:flex;"><span>  processInputBuffer(c);
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">if</span> <span style="color:#1f2328">(</span><span style="color:#0550ae">!</span><span style="color:#1f2328">(</span>c<span style="color:#0550ae">-&gt;</span>flags <span style="color:#0550ae">&amp;</span> REDIS_BLOCKED<span style="color:#1f2328">))</span>
+</span></span><span style="display:flex;"><span>  processInputBuffer<span style="color:#1f2328">(</span>c<span style="color:#1f2328">);</span>
 </span></span></code></pre></div><h3 id="解析命令">解析命令</h3>
 <p><code>processInputBuffer</code>从 client&rsquo;s <code>querybuf</code> 解析命令，把解析的结果存储到 client 的 <code>argc</code> 和 <code>argv</code> 参数，回收<code>querybuf</code> 对应的内存。</p>
 <p>因为接收的数据不一定刚好是完整命令，client 需要维护命令相关的状态，主要有:</p>
@@ -417,33 +417,33 @@ sds.[h/c]实现变长字符串类型，是内部最常用的数据结构，很�
 <h3 id="执行命令">执行命令</h3>
 <p><code>processInputBuffer</code> 每次解析命令后，调用 <code>processCommand</code>，如果解析的结果是完整的命令，会执行命令。</p>
 <p>有一个全局变量 <code>cmdTable</code> 记录每个命令的名字，对应的处理逻辑、元数据:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">void</span> <span style="color:#a6e22e">redisCommandProc</span>(redisClient <span style="color:#f92672">*</span>c);
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">redisCommand</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span>name;
-</span></span><span style="display:flex;"><span>    redisCommandProc <span style="color:#f92672">*</span>proc;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> arity;  <span style="color:#75715e">/* 负数：cmd 参数至少要 -arity 个；正数：cmd 参数必须是 arity 个. */</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> flags;
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/* 还有4个成员，和 vm 相关，具体看代码*/</span>
-</span></span><span style="display:flex;"><span>};
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">static</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">redisCommand</span> cmdTable[] <span style="color:#f92672">=</span> {
-</span></span><span style="display:flex;"><span>    {<span style="color:#e6db74">&#34;get&#34;</span>,getCommand,<span style="color:#ae81ff">2</span>,REDIS_CMD_INLINE,NULL,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>},
-</span></span><span style="display:flex;"><span>    {<span style="color:#e6db74">&#34;set&#34;</span>,setCommand,<span style="color:#ae81ff">3</span>,REDIS_CMD_BULK<span style="color:#f92672">|</span>REDIS_CMD_DENYOOM,NULL,<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>},
-</span></span><span style="display:flex;"><span>    {<span style="color:#e6db74">&#34;setnx&#34;</span>,setnxCommand,<span style="color:#ae81ff">3</span>,REDIS_CMD_BULK<span style="color:#f92672">|</span>REDIS_CMD_DENYOOM,NULL,<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>},
-</span></span><span style="display:flex;"><span>    {<span style="color:#e6db74">&#34;append&#34;</span>,appendCommand,<span style="color:#ae81ff">3</span>,REDIS_CMD_BULK<span style="color:#f92672">|</span>REDIS_CMD_DENYOOM,NULL,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>},
-</span></span><span style="display:flex;"><span>    {<span style="color:#e6db74">&#34;substr&#34;</span>,substrCommand,<span style="color:#ae81ff">4</span>,REDIS_CMD_INLINE,NULL,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">1</span>},
-</span></span><span style="display:flex;"><span>    {<span style="color:#e6db74">&#34;del&#34;</span>,delCommand,<span style="color:#f92672">-</span><span style="color:#ae81ff">2</span>,REDIS_CMD_INLINE,NULL,<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>,<span style="color:#ae81ff">0</span>}
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">/* 还有很多，具体看代码 */</span>
-</span></span><span style="display:flex;"><span>};
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#cf222e">typedef</span> <span style="color:#cf222e">void</span> <span style="color:#6639ba">redisCommandProc</span><span style="color:#1f2328">(</span>redisClient <span style="color:#0550ae">*</span>c<span style="color:#1f2328">);</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">struct</span> <span style="color:#1f2328">redisCommand</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">char</span> <span style="color:#0550ae">*</span>name<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    redisCommandProc <span style="color:#0550ae">*</span>proc<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">int</span> arity<span style="color:#1f2328">;</span>  <span style="color:#57606a">/* 负数：cmd 参数至少要 -arity 个；正数：cmd 参数必须是 arity 个. */</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">int</span> flags<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#57606a">/* 还有4个成员，和 vm 相关，具体看代码*/</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">};</span>
+</span></span><span style="display:flex;"><span><span style="color:#cf222e">static</span> <span style="color:#cf222e">struct</span> <span style="color:#1f2328">redisCommand</span> cmdTable<span style="color:#1f2328">[]</span> <span style="color:#0550ae">=</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#1f2328">{</span><span style="color:#0a3069">&#34;get&#34;</span><span style="color:#1f2328">,</span>getCommand<span style="color:#1f2328">,</span><span style="color:#0550ae">2</span><span style="color:#1f2328">,</span>REDIS_CMD_INLINE<span style="color:#1f2328">,</span><span style="color:#6639ba">NULL</span><span style="color:#1f2328">,</span><span style="color:#0550ae">1</span><span style="color:#1f2328">,</span><span style="color:#0550ae">1</span><span style="color:#1f2328">,</span><span style="color:#0550ae">1</span><span style="color:#1f2328">},</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#1f2328">{</span><span style="color:#0a3069">&#34;set&#34;</span><span style="color:#1f2328">,</span>setCommand<span style="color:#1f2328">,</span><span style="color:#0550ae">3</span><span style="color:#1f2328">,</span>REDIS_CMD_BULK<span style="color:#0550ae">|</span>REDIS_CMD_DENYOOM<span style="color:#1f2328">,</span><span style="color:#6639ba">NULL</span><span style="color:#1f2328">,</span><span style="color:#0550ae">0</span><span style="color:#1f2328">,</span><span style="color:#0550ae">0</span><span style="color:#1f2328">,</span><span style="color:#0550ae">0</span><span style="color:#1f2328">},</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#1f2328">{</span><span style="color:#0a3069">&#34;setnx&#34;</span><span style="color:#1f2328">,</span>setnxCommand<span style="color:#1f2328">,</span><span style="color:#0550ae">3</span><span style="color:#1f2328">,</span>REDIS_CMD_BULK<span style="color:#0550ae">|</span>REDIS_CMD_DENYOOM<span style="color:#1f2328">,</span><span style="color:#6639ba">NULL</span><span style="color:#1f2328">,</span><span style="color:#0550ae">0</span><span style="color:#1f2328">,</span><span style="color:#0550ae">0</span><span style="color:#1f2328">,</span><span style="color:#0550ae">0</span><span style="color:#1f2328">},</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#1f2328">{</span><span style="color:#0a3069">&#34;append&#34;</span><span style="color:#1f2328">,</span>appendCommand<span style="color:#1f2328">,</span><span style="color:#0550ae">3</span><span style="color:#1f2328">,</span>REDIS_CMD_BULK<span style="color:#0550ae">|</span>REDIS_CMD_DENYOOM<span style="color:#1f2328">,</span><span style="color:#6639ba">NULL</span><span style="color:#1f2328">,</span><span style="color:#0550ae">1</span><span style="color:#1f2328">,</span><span style="color:#0550ae">1</span><span style="color:#1f2328">,</span><span style="color:#0550ae">1</span><span style="color:#1f2328">},</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#1f2328">{</span><span style="color:#0a3069">&#34;substr&#34;</span><span style="color:#1f2328">,</span>substrCommand<span style="color:#1f2328">,</span><span style="color:#0550ae">4</span><span style="color:#1f2328">,</span>REDIS_CMD_INLINE<span style="color:#1f2328">,</span><span style="color:#6639ba">NULL</span><span style="color:#1f2328">,</span><span style="color:#0550ae">1</span><span style="color:#1f2328">,</span><span style="color:#0550ae">1</span><span style="color:#1f2328">,</span><span style="color:#0550ae">1</span><span style="color:#1f2328">},</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#1f2328">{</span><span style="color:#0a3069">&#34;del&#34;</span><span style="color:#1f2328">,</span>delCommand<span style="color:#1f2328">,</span><span style="color:#0550ae">-</span><span style="color:#0550ae">2</span><span style="color:#1f2328">,</span>REDIS_CMD_INLINE<span style="color:#1f2328">,</span><span style="color:#6639ba">NULL</span><span style="color:#1f2328">,</span><span style="color:#0550ae">0</span><span style="color:#1f2328">,</span><span style="color:#0550ae">0</span><span style="color:#1f2328">,</span><span style="color:#0550ae">0</span><span style="color:#1f2328">}</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#57606a">/* 还有很多，具体看代码 */</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">};</span>
 </span></span></code></pre></div><p><code>processCommand</code>从<code>cmdTable</code>查找对应的命令，并调用<code>cmd-&gt;proc(c)</code>。</p>
 <p><code>cmd-&gt;proc(c)</code>的实现是读写 server 维护的数据结构。</p>
 <p><code>redisClient</code>有一个成员<code>redisDb *db</code>，在<code>redisClient</code>初始化时，把<code>db</code>指向 server&rsquo;s <code>db</code>。</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">redisDb</span> {
-</span></span><span style="display:flex;"><span>    dict <span style="color:#f92672">*</span>dict;                 <span style="color:#75715e">/* The keyspace for this DB */</span>
-</span></span><span style="display:flex;"><span>    dict <span style="color:#f92672">*</span>expires;              <span style="color:#75715e">/* Timeout of keys with a timeout set */</span>
-</span></span><span style="display:flex;"><span>    dict <span style="color:#f92672">*</span>blockingkeys;         <span style="color:#75715e">/* Keys with clients waiting for data (BLPOP) */</span>
-</span></span><span style="display:flex;"><span>    dict <span style="color:#f92672">*</span>io_keys;              <span style="color:#75715e">/* Keys with clients waiting for VM I/O */</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> id;
-</span></span><span style="display:flex;"><span>} redisDb;
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#cf222e">typedef</span> <span style="color:#cf222e">struct</span> <span style="color:#1f2328">redisDb</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    dict <span style="color:#0550ae">*</span>dict<span style="color:#1f2328">;</span>                 <span style="color:#57606a">/* The keyspace for this DB */</span>
+</span></span><span style="display:flex;"><span>    dict <span style="color:#0550ae">*</span>expires<span style="color:#1f2328">;</span>              <span style="color:#57606a">/* Timeout of keys with a timeout set */</span>
+</span></span><span style="display:flex;"><span>    dict <span style="color:#0550ae">*</span>blockingkeys<span style="color:#1f2328">;</span>         <span style="color:#57606a">/* Keys with clients waiting for data (BLPOP) */</span>
+</span></span><span style="display:flex;"><span>    dict <span style="color:#0550ae">*</span>io_keys<span style="color:#1f2328">;</span>              <span style="color:#57606a">/* Keys with clients waiting for VM I/O */</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">int</span> id<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span> redisDb<span style="color:#1f2328">;</span>
 </span></span></code></pre></div><p><code>cmd-&gt;proc(c)</code>把读写的结果放到 c 的成员<code>list *reply</code>中。</p>
 <p>如果放之前<code>listLength(c-&gt;reply) == 0</code>，还需要把 (c-&gt;fd, writable, <code>sendReplyToClient</code>) 注册到 event loop。</p>
 <h3 id="发送回复">发送回复</h3>
@@ -453,25 +453,25 @@ sds.[h/c]实现变长字符串类型，是内部最常用的数据结构，很�
 <p><code>redisServer</code>维护多种信息，其中成员<code>redisDb *db</code>维护内存的数据。</p>
 <p><code>redisDb *db</code>是一个<code>redisDb</code>类型的数组，因为<code>redisServer</code>支持多个数据库，数据库个数由配置值<code>dbnum</code>决定，默认是16。</p>
 <p>我觉得<code>redisDb</code>的设计会是:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">redisDb</span> {
-</span></span><span style="display:flex;"><span>    Dict<span style="color:#f92672">&lt;</span>string, string<span style="color:#f92672">&gt;</span> <span style="color:#66d9ef">default</span>;     <span style="color:#75715e">// string kv table.
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    Dict<span style="color:#f92672">&lt;</span>string, Dict<span style="color:#f92672">*&gt;</span> hash_tables;
-</span></span><span style="display:flex;"><span>    Dict<span style="color:#f92672">&lt;</span>string, LinkedList <span style="color:#f92672">*&gt;</span> linked_lists;
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// others
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>};
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#cf222e">struct</span> <span style="color:#1f2328">redisDb</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    Dict<span style="color:#0550ae">&lt;</span>string<span style="color:#1f2328">,</span> string<span style="color:#0550ae">&gt;</span> <span style="color:#cf222e">default</span><span style="color:#1f2328">;</span>     <span style="color:#57606a">// string kv table.
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span>    Dict<span style="color:#0550ae">&lt;</span>string<span style="color:#1f2328">,</span> Dict<span style="color:#0550ae">*&gt;</span> hash_tables<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    Dict<span style="color:#0550ae">&lt;</span>string<span style="color:#1f2328">,</span> LinkedList <span style="color:#0550ae">*&gt;</span> linked_lists<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#57606a">// others
+</span></span></span><span style="display:flex;"><span><span style="color:#57606a"></span><span style="color:#1f2328">};</span>
 </span></span></code></pre></div><p>redis 的设计是：</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">redisDb</span> {
-</span></span><span style="display:flex;"><span>    Dict<span style="color:#f92672">&lt;</span>robj<span style="color:#f92672">*</span>, robj<span style="color:#f92672">*&gt;</span> dict;
-</span></span><span style="display:flex;"><span>};
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#cf222e">struct</span> <span style="color:#1f2328">redisDb</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    Dict<span style="color:#0550ae">&lt;</span>robj<span style="color:#0550ae">*</span><span style="color:#1f2328">,</span> robj<span style="color:#0550ae">*&gt;</span> dict<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">};</span>
 </span></span></code></pre></div><p>把所有类型的数据结构合并到一个 <code>Dict</code>，通过 <code>robj-&gt;type</code> 判断 value 的数据类型。</p>
 <p><code>redisDb</code>具体定义是:</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#66d9ef">typedef</span> <span style="color:#66d9ef">struct</span> <span style="color:#a6e22e">redisDb</span> {
-</span></span><span style="display:flex;"><span>    dict <span style="color:#f92672">*</span>dict;                 <span style="color:#75715e">/* The keyspace for this DB */</span>
-</span></span><span style="display:flex;"><span>    dict <span style="color:#f92672">*</span>expires;              <span style="color:#75715e">/* Timeout of keys with a timeout set */</span>
-</span></span><span style="display:flex;"><span>    dict <span style="color:#f92672">*</span>blockingkeys;         <span style="color:#75715e">/* Keys with clients waiting for data (BLPOP) */</span>
-</span></span><span style="display:flex;"><span>    dict <span style="color:#f92672">*</span>io_keys;              <span style="color:#75715e">/* Keys with clients waiting for VM I/O */</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> id;
-</span></span><span style="display:flex;"><span>} redisDb;
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-cpp" data-lang="cpp"><span style="display:flex;"><span><span style="color:#cf222e">typedef</span> <span style="color:#cf222e">struct</span> <span style="color:#1f2328">redisDb</span> <span style="color:#1f2328">{</span>
+</span></span><span style="display:flex;"><span>    dict <span style="color:#0550ae">*</span>dict<span style="color:#1f2328">;</span>                 <span style="color:#57606a">/* The keyspace for this DB */</span>
+</span></span><span style="display:flex;"><span>    dict <span style="color:#0550ae">*</span>expires<span style="color:#1f2328">;</span>              <span style="color:#57606a">/* Timeout of keys with a timeout set */</span>
+</span></span><span style="display:flex;"><span>    dict <span style="color:#0550ae">*</span>blockingkeys<span style="color:#1f2328">;</span>         <span style="color:#57606a">/* Keys with clients waiting for data (BLPOP) */</span>
+</span></span><span style="display:flex;"><span>    dict <span style="color:#0550ae">*</span>io_keys<span style="color:#1f2328">;</span>              <span style="color:#57606a">/* Keys with clients waiting for VM I/O */</span>
+</span></span><span style="display:flex;"><span>    <span style="color:#cf222e">int</span> id<span style="color:#1f2328">;</span>
+</span></span><span style="display:flex;"><span><span style="color:#1f2328">}</span> redisDb<span style="color:#1f2328">;</span>
 </span></span></code></pre></div><h2 id="数据结构">数据结构</h2>
 <p>各种数据结构的代码相对独立，直接看代码就行了。</p>
 </section>
