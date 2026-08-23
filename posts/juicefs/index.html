@@ -37,24 +37,29 @@ JuiceFS
 
 
 分布式文件系统的发展
-Google GFS 的发表是分布式文件系统发展的里程碑，Meta &#43; Data 的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。
-随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 autoMQ 把 Kafka 的数据放到对象存储，AWS 刚发布的基于对象存储的向量数据库。
-现在 LLM 训练对分布式文件系统的需求也有变化，和大数据场景不同，AI 训练需要存储大量小文件，所以文件系统的元数据更多。分布式文件系统还有一个热点是 GPU Direct FS。
+Google GFS 是分布式文件系统发展的里程碑，Meta 和 Data 分离的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。
+随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 autoMQ 把 Kafka 数据放到对象存储，AWS 刚发布的基于对象存储的向量数据库。
+现在 LLM 训练对分布式文件系统的需求也有变化，和大数据场景不同，LLM 训练过程需要读取大量小文件，所以文件系统的元数据更多。分布式文件系统还有一个热点是 GPU Direct FS。
 分布式文件系统的挑战
-文件系统的元数据组成一个 DAG，分布式文件系统的挑战之一是：
-
-怎么存储这个 DAG?
-怎么高并发读写这个 DAG?
-
+文件系统的元数据组成一棵树结构，分布式文件系统的挑战之一是怎么存储和高并发读写树结构。
 常见思路：
 
-整个 DAG 存储在单个节点（一般会用主备），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈
-设计一个可扩展的存储 DAG 的系统，把 DAG 划分存储到多个节点，目前有相关的论文，但是没有这样做的开源项目(CubeFS 好像是?)
+整个 Tree 存储在单个节点（主备模式做高可用），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈
+设计一个可扩展的存储 Tree 的系统，把 Tree 划分存储到多个节点，有相关论文
 转化成 KV/Table 数据模型存储在 KV/RDB
 不采用 Meta &#43; Data 架构，把 Meta 和 Data 混合存储
 
 JuiceFS
-JuiceFS 是经典的 client-meta-data 架构，采用第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。" />
+JuiceFS 是经典的 client-meta-data 架构，采用上面的第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。
+架构：
+app        fuse lib  --&gt;  juicefs --&gt; meta service
+ |            |             |
+ |            |          data block cache --&gt; object storage service
+syscall    /dev/fuse
+ |            |
+vfs    --&gt;   fuse
+文件存储模型
+如果一个文件作为一个对象去存储，修改文件会有严重的写放大，特别是大文件，所以需要把文件划分成多个对象去存储。" />
   <meta name="author" content="cxljs" /><link rel="preload stylesheet" as="style" href="https://cxljs.github.io/main.min.0ed59c72e3c71f4aab06535ca224bee5d10b738c54c8cc0b9d04d0f05f2a0657.css" />
 
   
@@ -82,23 +87,27 @@ JuiceFS 是经典的 client-meta-data 架构，采用第3种思路存储元数�
 
   <meta name="generator" content="Hugo 0.145.0">
   <meta itemprop="name" content="JuiceFS 设计和实现">
-  <meta itemprop="description" content="分布式文件系统的发展 分布式文件系统的挑战 JuiceFS 文件存储模型 元数据存储模型 架构 分布式文件系统的发展 Google GFS 的发表是分布式文件系统发展的里程碑，Meta &#43; Data 的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。
-随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 autoMQ 把 Kafka 的数据放到对象存储，AWS 刚发布的基于对象存储的向量数据库。
-现在 LLM 训练对分布式文件系统的需求也有变化，和大数据场景不同，AI 训练需要存储大量小文件，所以文件系统的元数据更多。分布式文件系统还有一个热点是 GPU Direct FS。
-分布式文件系统的挑战 文件系统的元数据组成一个 DAG，分布式文件系统的挑战之一是：
-怎么存储这个 DAG? 怎么高并发读写这个 DAG? 常见思路：
-整个 DAG 存储在单个节点（一般会用主备），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈 设计一个可扩展的存储 DAG 的系统，把 DAG 划分存储到多个节点，目前有相关的论文，但是没有这样做的开源项目(CubeFS 好像是?) 转化成 KV/Table 数据模型存储在 KV/RDB 不采用 Meta &#43; Data 架构，把 Meta 和 Data 混合存储 JuiceFS JuiceFS 是经典的 client-meta-data 架构，采用第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。">
+  <meta itemprop="description" content="分布式文件系统的发展 分布式文件系统的挑战 JuiceFS 文件存储模型 元数据存储模型 架构 分布式文件系统的发展 Google GFS 是分布式文件系统发展的里程碑，Meta 和 Data 分离的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。
+随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 autoMQ 把 Kafka 数据放到对象存储，AWS 刚发布的基于对象存储的向量数据库。
+现在 LLM 训练对分布式文件系统的需求也有变化，和大数据场景不同，LLM 训练过程需要读取大量小文件，所以文件系统的元数据更多。分布式文件系统还有一个热点是 GPU Direct FS。
+分布式文件系统的挑战 文件系统的元数据组成一棵树结构，分布式文件系统的挑战之一是怎么存储和高并发读写树结构。
+常见思路：
+整个 Tree 存储在单个节点（主备模式做高可用），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈 设计一个可扩展的存储 Tree 的系统，把 Tree 划分存储到多个节点，有相关论文 转化成 KV/Table 数据模型存储在 KV/RDB 不采用 Meta &#43; Data 架构，把 Meta 和 Data 混合存储 JuiceFS JuiceFS 是经典的 client-meta-data 架构，采用上面的第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。
+架构：
+app fuse lib --&gt; juicefs --&gt; meta service | | | | | data block cache --&gt; object storage service syscall /dev/fuse | | vfs --&gt; fuse 文件存储模型 如果一个文件作为一个对象去存储，修改文件会有严重的写放大，特别是大文件，所以需要把文件划分成多个对象去存储。">
   <meta itemprop="datePublished" content="2025-08-01T19:06:59+08:00">
   <meta itemprop="dateModified" content="2025-08-01T19:06:59+08:00">
-  <meta itemprop="wordCount" content="439"><meta property="og:url" content="https://cxljs.github.io/posts/juicefs/">
+  <meta itemprop="wordCount" content="457"><meta property="og:url" content="https://cxljs.github.io/posts/juicefs/">
   <meta property="og:site_name" content="cxljs">
   <meta property="og:title" content="JuiceFS 设计和实现">
-  <meta property="og:description" content="分布式文件系统的发展 分布式文件系统的挑战 JuiceFS 文件存储模型 元数据存储模型 架构 分布式文件系统的发展 Google GFS 的发表是分布式文件系统发展的里程碑，Meta &#43; Data 的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。
-随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 autoMQ 把 Kafka 的数据放到对象存储，AWS 刚发布的基于对象存储的向量数据库。
-现在 LLM 训练对分布式文件系统的需求也有变化，和大数据场景不同，AI 训练需要存储大量小文件，所以文件系统的元数据更多。分布式文件系统还有一个热点是 GPU Direct FS。
-分布式文件系统的挑战 文件系统的元数据组成一个 DAG，分布式文件系统的挑战之一是：
-怎么存储这个 DAG? 怎么高并发读写这个 DAG? 常见思路：
-整个 DAG 存储在单个节点（一般会用主备），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈 设计一个可扩展的存储 DAG 的系统，把 DAG 划分存储到多个节点，目前有相关的论文，但是没有这样做的开源项目(CubeFS 好像是?) 转化成 KV/Table 数据模型存储在 KV/RDB 不采用 Meta &#43; Data 架构，把 Meta 和 Data 混合存储 JuiceFS JuiceFS 是经典的 client-meta-data 架构，采用第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。">
+  <meta property="og:description" content="分布式文件系统的发展 分布式文件系统的挑战 JuiceFS 文件存储模型 元数据存储模型 架构 分布式文件系统的发展 Google GFS 是分布式文件系统发展的里程碑，Meta 和 Data 分离的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。
+随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 autoMQ 把 Kafka 数据放到对象存储，AWS 刚发布的基于对象存储的向量数据库。
+现在 LLM 训练对分布式文件系统的需求也有变化，和大数据场景不同，LLM 训练过程需要读取大量小文件，所以文件系统的元数据更多。分布式文件系统还有一个热点是 GPU Direct FS。
+分布式文件系统的挑战 文件系统的元数据组成一棵树结构，分布式文件系统的挑战之一是怎么存储和高并发读写树结构。
+常见思路：
+整个 Tree 存储在单个节点（主备模式做高可用），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈 设计一个可扩展的存储 Tree 的系统，把 Tree 划分存储到多个节点，有相关论文 转化成 KV/Table 数据模型存储在 KV/RDB 不采用 Meta &#43; Data 架构，把 Meta 和 Data 混合存储 JuiceFS JuiceFS 是经典的 client-meta-data 架构，采用上面的第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。
+架构：
+app fuse lib --&gt; juicefs --&gt; meta service | | | | | data block cache --&gt; object storage service syscall /dev/fuse | | vfs --&gt; fuse 文件存储模型 如果一个文件作为一个对象去存储，修改文件会有严重的写放大，特别是大文件，所以需要把文件划分成多个对象去存储。">
   <meta property="og:locale" content="en_us">
   <meta property="og:type" content="article">
     <meta property="article:section" content="posts">
@@ -107,12 +116,14 @@ JuiceFS 是经典的 client-meta-data 架构，采用第3种思路存储元数�
 
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="JuiceFS 设计和实现">
-  <meta name="twitter:description" content="分布式文件系统的发展 分布式文件系统的挑战 JuiceFS 文件存储模型 元数据存储模型 架构 分布式文件系统的发展 Google GFS 的发表是分布式文件系统发展的里程碑，Meta &#43; Data 的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。
-随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 autoMQ 把 Kafka 的数据放到对象存储，AWS 刚发布的基于对象存储的向量数据库。
-现在 LLM 训练对分布式文件系统的需求也有变化，和大数据场景不同，AI 训练需要存储大量小文件，所以文件系统的元数据更多。分布式文件系统还有一个热点是 GPU Direct FS。
-分布式文件系统的挑战 文件系统的元数据组成一个 DAG，分布式文件系统的挑战之一是：
-怎么存储这个 DAG? 怎么高并发读写这个 DAG? 常见思路：
-整个 DAG 存储在单个节点（一般会用主备），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈 设计一个可扩展的存储 DAG 的系统，把 DAG 划分存储到多个节点，目前有相关的论文，但是没有这样做的开源项目(CubeFS 好像是?) 转化成 KV/Table 数据模型存储在 KV/RDB 不采用 Meta &#43; Data 架构，把 Meta 和 Data 混合存储 JuiceFS JuiceFS 是经典的 client-meta-data 架构，采用第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。">
+  <meta name="twitter:description" content="分布式文件系统的发展 分布式文件系统的挑战 JuiceFS 文件存储模型 元数据存储模型 架构 分布式文件系统的发展 Google GFS 是分布式文件系统发展的里程碑，Meta 和 Data 分离的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。
+随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 autoMQ 把 Kafka 数据放到对象存储，AWS 刚发布的基于对象存储的向量数据库。
+现在 LLM 训练对分布式文件系统的需求也有变化，和大数据场景不同，LLM 训练过程需要读取大量小文件，所以文件系统的元数据更多。分布式文件系统还有一个热点是 GPU Direct FS。
+分布式文件系统的挑战 文件系统的元数据组成一棵树结构，分布式文件系统的挑战之一是怎么存储和高并发读写树结构。
+常见思路：
+整个 Tree 存储在单个节点（主备模式做高可用），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈 设计一个可扩展的存储 Tree 的系统，把 Tree 划分存储到多个节点，有相关论文 转化成 KV/Table 数据模型存储在 KV/RDB 不采用 Meta &#43; Data 架构，把 Meta 和 Data 混合存储 JuiceFS JuiceFS 是经典的 client-meta-data 架构，采用上面的第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。
+架构：
+app fuse lib --&gt; juicefs --&gt; meta service | | | | | data block cache --&gt; object storage service syscall /dev/fuse | | vfs --&gt; fuse 文件存储模型 如果一个文件作为一个对象去存储，修改文件会有严重的写放大，特别是大文件，所以需要把文件划分成多个对象去存储。">
 
   <link rel="canonical" href="https://cxljs.github.io/posts/juicefs/" />
 </head>
@@ -206,62 +217,72 @@ JuiceFS 是经典的 client-meta-data 架构，采用第3种思路存储元数�
 </li>
 </ul>
 <h1 id="分布式文件系统的发展">分布式文件系统的发展</h1>
-<p>Google GFS 的发表是分布式文件系统发展的里程碑，Meta + Data 的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。</p>
-<p>随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 autoMQ 把 Kafka 的数据放到对象存储，AWS 刚发布的基于对象存储的向量数据库。</p>
-<p>现在 LLM 训练对分布式文件系统的需求也有变化，和大数据场景不同，AI 训练需要存储大量小文件，所以文件系统的元数据更多。分布式文件系统还有一个热点是 GPU Direct FS。</p>
+<p>Google GFS 是分布式文件系统发展的里程碑，Meta 和 Data 分离的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。</p>
+<p>随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 autoMQ 把 Kafka 数据放到对象存储，AWS 刚发布的基于对象存储的向量数据库。</p>
+<p>现在 LLM 训练对分布式文件系统的需求也有变化，和大数据场景不同，LLM 训练过程需要读取大量小文件，所以文件系统的元数据更多。分布式文件系统还有一个热点是 GPU Direct FS。</p>
 <h1 id="分布式文件系统的挑战">分布式文件系统的挑战</h1>
-<p>文件系统的元数据组成一个 DAG，分布式文件系统的挑战之一是：</p>
-<ol>
-<li>怎么存储这个 DAG?</li>
-<li>怎么高并发读写这个 DAG?</li>
-</ol>
+<p>文件系统的元数据组成一棵树结构，分布式文件系统的挑战之一是怎么存储和高并发读写树结构。</p>
 <p>常见思路：</p>
 <ol>
-<li>整个 DAG 存储在单个节点（一般会用主备），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈</li>
-<li>设计一个可扩展的存储 DAG 的系统，把 DAG 划分存储到多个节点，目前有相关的论文，但是没有这样做的开源项目(CubeFS 好像是?)</li>
+<li>整个 Tree 存储在单个节点（主备模式做高可用），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈</li>
+<li>设计一个可扩展的存储 Tree 的系统，把 Tree 划分存储到多个节点，有相关论文</li>
 <li>转化成 KV/Table 数据模型存储在 KV/RDB</li>
 <li>不采用 Meta + Data 架构，把 Meta 和 Data 混合存储</li>
 </ol>
 <h1 id="juicefs">JuiceFS</h1>
-<p>JuiceFS 是经典的 client-meta-data 架构，采用第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。</p>
+<p>JuiceFS 是经典的 client-meta-data 架构，采用上面的第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。</p>
 <p>架构：</p>
 <pre tabindex="0"><code>app        fuse lib  --&gt;  juicefs --&gt; meta service
  |            |             |
- |            |          data cache --&gt; object storage service
+ |            |          data block cache --&gt; object storage service
 syscall    /dev/fuse
  |            |
 vfs    --&gt;   fuse
 </code></pre><h2 id="文件存储模型">文件存储模型</h2>
-<p>如果一个文件作为一个对象去存储，读、修改文件会有严重的读、写放大，特别是大文件，所以需要把文件划分成多个对象去存储。</p>
+<p>如果一个文件作为一个对象去存储，修改文件会有严重的写放大，特别是大文件，所以需要把文件划分成多个对象去存储。</p>
 <p>为此 JuiceFS 设计了 chunk-slice-block 模型：</p>
 <ul>
 <li>文件逻辑上划分成多个 chunk，chunk size = 64MB</li>
-<li>对 chunk 的每次写为一个 slice，slice = (chunk id, offset, size, data)，data 存储在 local data cache，多次写可能有重叠，所以还要记录 slice 顺序，以最新的为准。跨 chunk 的写会分成多个 slice</li>
-<li>把 local data cache 的 slice 存储到对象存储时，把一个 slice 作为一个对象去存储？为了提高 slice 写到对象存储的速度，把 slice 划分成多个 block (block size = 4M) 并发写入</li>
+<li>对 chunk 的每次写为一个 slice，slice = (chunk id, offset, size, data)，data 存储在 local data cache，多次写可能有重叠，所以还要维护 slice 顺序，以最新的为准。跨 chunk 的写会分成多个 slice</li>
+<li>把 slice 存储到对象存储时，把 slice 划分成多个 block (block size = 4MB) 并发写入，所以对象存储里的对象是一个个 &lt;= 4MB 的 block</li>
 </ul>
-<p>所以对象存储的对象是一个个 &lt;= 4M 的 block。</p>
+<p>block 为存储的单位 vs. slice 为存储单位：</p>
+<ul>
+<li>pros.:
+<ul>
+<li>方便并发上传，slice 为单位也可以用 multipart 方式上传，但是有些对象存储不支持 multipart</li>
+<li>方便 GC，juicefs 为了避免写放大，随机修改文件时，juicefs 不是“下载对象-&gt;修改-&gt;重传”，而是直接上传新对象，然后删除旧对象，如果以 slice 为单位，即使修改了一点数据，整个 slice 也无法删除，因为 slice 的部分数据是有效的，以 block 为单位，能更快删除旧数据</li>
+<li>本地 object cache 的实现更加简洁</li>
+</ul>
+</li>
+<li>cons.:
+<ul>
+<li>更多元数据，对 meta service 压力更大</li>
+</ul>
+</li>
+</ul>
 <p>对象名：<code>${fsname}/chunks/${hash}/${basename}</code>:</p>
 <ul>
 <li>fsname: 用户创建文件系统时定义的文件系统名</li>
 <li>hash: hash_func(basename)，为了做隔离</li>
 <li>basename: 对象名，格式是 <code>${slice_id}_${block_index}_${block_size}</code>，block_index 是 block 在 slice 的序号，范围 [0,16)</li>
 </ul>
-<p>多个写重叠会出现过期 slice -&gt; 出现过期 block，所以需要有删除策略，还可以做碎片合并等设计。</p>
+<p>多个写重叠会有过期 slice -&gt; 有过期 block，所以需要有删除策略，还可以做碎片合并等设计。</p>
 <p>上面说每次写是一个 slice，实际上由于有 local data cache，JuiceFS 会做一些优化，比如一次写后，slice 还没有上传到对象存储，此时有新的写操作和它重叠或连续，会直接修改它，不创建新 slice。</p>
 <h2 id="元数据存储模型">元数据存储模型</h2>
 <p>JuiceFS 需要维护的元数据：</p>
 <ul>
 <li>系统元数据</li>
-<li>各种计数值：下个可用的 inode id, slice id, session id, &amp;c</li>
-<li>session: client id, info 和超时时间</li>
+<li>各种计数值：下个可用的 inode id / slice id / session id / &amp;c</li>
+<li>session: client id, client info 和超时时间</li>
 <li>inode attr：type, size, nlink, uid, parent inode id, &amp;c</li>
 <li>file inode data (chunks): (inode id, chunk index) -&gt; []sliceMeta</li>
-<li>dir inode data：(parent inode id, name) -&gt; (type, inode id)，即(目录 inode id, 子 inode 名) -&gt; (子 inode type, 子 inode id)</li>
+<li>dir inode data：(dir inode id, child inode name) -&gt; (child inode type, child inode id)</li>
 <li>plock: (inode, session id, owner) -&gt; []plock record</li>
 <li>&hellip;</li>
 </ul>
 <p>JuiceFS 需要设计合理的数据模型，把元数据放到 TiKV/MySQL/Redis 等系统。</p>
-<p>以 Redis 为例：</p>
+<p>Redis：</p>
 <ul>
 <li>系统元数据：string KV ：<code>setting</code> -&gt; json string</li>
 <li>各种计数值：string KV ：<code>nextInode</code> -&gt; num, <code>nextSliceId</code> -&gt; num, &amp;c</li>
@@ -272,8 +293,8 @@ vfs    --&gt;   fuse
 </ul>
 </li>
 <li>inode attr: string KV: <code>i${inode_id}</code> -&gt; 二进制编码的 attr struct</li>
-<li>chunk: <code>c${inode_id}_{chunk_index}</code> -&gt; list {二进制编码的 sliceMeta struct}</li>
-<li>dir: <code>d${inode_id}</code> -&gt; a hash table {name -&gt; 二进制编码的 (inode_type, inode_id)}</li>
+<li>chunk: <code>c${inode_id}_{chunk_index}</code> -&gt; a list {二进制编码的 sliceMeta struct}</li>
+<li>dir: <code>d${inode_id}</code> -&gt; a hash table {child inode name -&gt; 二进制编码的 (inode_type, inode_id)}</li>
 <li>&hellip;</li>
 </ul>
 <p>用只有 KV API 的系统作为 Meta Service 时，JuiceFS 的做法是 string KV 不变，hash table 等数据结构把 key 和 field 拼接成一个 key：</p>
@@ -291,18 +312,18 @@ vfs    --&gt;   fuse
 <li>&hellip;</li>
 </ul>
 <p>key 的具体拼接细节没有保持一致，但无伤大雅。</p>
-<p>用数据库作为 Meta Service，元数据分成多个表存放，本质上差不多。</p>
+<p>用数据库作为 Meta Service，元数据分成多个表存放。</p>
 <p>以读文件数据为例，流程：</p>
 <ol>
-<li>root inode id = 1, 按照文件路径，找到 inode_id, size(in attr)</li>
-<li>计算要读的 chunk_index, 获取 sliceMeta list</li>
+<li>root inode id = 1, 根据文件路径找到 inode_id, file size(in attr struct)</li>
+<li>计算要读的 chunk_index, 获取 sliceMeta array</li>
 <li>计算要读的位置在哪些 slices 以及在 slice 内的 index，<code>${slice_id}_${block_index}_${block_size}</code> 读取 block，拼接数据</li>
 </ol>
 <h2 id="架构">架构</h2>
 <p>JuiceFS 3个主要模块：vfs, meta store 和 chunk store:</p>
 <ul>
-<li>vfs: 以文件系统的视角，维护需要的元数据，做相关的检查，调用 meta store 和 chunk store</li>
-<li>meta store: cache +  meta service cli，获取元数据时，会先查看 cache，减少对远程 meta service 的压力</li>
+<li>vfs: 从文件系统的视角，维护需要的元数据，做相关的检查，调用 meta store 和 chunk store</li>
+<li>meta store: cache + meta service cli，获取元数据时，会先查看 cache，减少对远程 meta service 的压力</li>
 <li>chunk store: data cache + oss cli + 预读策略</li>
 </ul>
 </section>
