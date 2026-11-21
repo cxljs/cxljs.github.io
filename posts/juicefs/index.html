@@ -1,0 +1,383 @@
+<!doctype html>
+
+
+
+
+
+
+
+<html
+  class="not-ready lg:text-base"
+  style="--bg:#faf8f1"
+  lang="en-us"
+  dir="ltr"
+><head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, shrink-to-fit=no"
+  />
+
+  
+  <title>从源码理解 JuiceFS 的设计-cxljs</title>
+
+  
+  <meta name="theme-color" />
+
+  <meta name="description" content="
+分布式文件系统的发展
+分布式文件系统的挑战
+JuiceFS
+
+文件存储模型
+元数据存储模型
+VFS
+Meta Service
+Chunk Store
+一致性
+
+
+
+分布式文件系统的发展
+Google GFS 是分布式文件系统发展的里程碑，Meta 和 Data 分离的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。
+随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 Neon, AutoMQ, JuiceFS.
+LLM 训练和推理对分布式文件系统的要求和大数据场景不同，LLM 训练过程需要读取大量小文件，checkpoint 会写入大文件，部署推理服务也需要读写大文件，所以文件系统需要同时在大小文件都有好的性能，小文件有更多元数据，对元数据服务要求更高。分布式文件系统还有一个热点是 GPU Direct FS。
+分布式文件系统的挑战
+文件系统的元数据组成一棵树，分布式文件系统的挑战之一是怎么存储和高性能读写树。
+常见思路：
+
+整个树存储在单个节点（主备模式做故障容忍），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈
+设计一个可扩展的存储树的系统，把树划分存储到多个节点，百度的文件系统的元数据系统就是这样设计，发过论文
+转化成 KV/Table 数据模型存储在 KV/RDB
+不采用 Meta &#43; Data 架构，把 Meta 和 Data 混合存储
+
+JuiceFS
+JuiceFS 是一个基于对象存储的文件系统，被阶跃、小米等公司使用，这篇文章主要是了解 JuiceFS 的设计。
+JuiceFS 是经典的 client-meta-data 架构，采用上面的第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。
+架构：
+app        fuse lib  --&gt;  juicefs --&gt; meta service
+ |            |             |
+ |            |         object store --&gt; object storage service
+syscall    /dev/fuse        |
+ |            |          local cache
+vfs    --&gt;   fuse
+使用：" />
+  <meta name="author" content="cxljs" /><link rel="preload stylesheet" as="style" href="https://cxljs.github.io/main.min.0ed59c72e3c71f4aab06535ca224bee5d10b738c54c8cc0b9d04d0f05f2a0657.css" />
+
+  
+  <link rel="preload" as="image" href="https://cxljs.github.io/theme.png" />
+
+  
+
+  
+
+  <script
+    defer
+    src="https://cxljs.github.io/highlight.min.js"
+    onload="hljs.initHighlightingOnLoad();"
+  ></script>
+
+  
+  <link
+    rel="icon"
+    href="https://cxljs.github.io/favicon.ico"
+  />
+  <link
+    rel="apple-touch-icon"
+    href="https://cxljs.github.io/apple-touch-icon.png"
+  />
+
+  <meta name="generator" content="Hugo 0.145.0">
+  <meta itemprop="name" content="从源码理解 JuiceFS 的设计">
+  <meta itemprop="description" content="分布式文件系统的发展 分布式文件系统的挑战 JuiceFS 文件存储模型 元数据存储模型 VFS Meta Service Chunk Store 一致性 分布式文件系统的发展 Google GFS 是分布式文件系统发展的里程碑，Meta 和 Data 分离的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。
+随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 Neon, AutoMQ, JuiceFS.
+LLM 训练和推理对分布式文件系统的要求和大数据场景不同，LLM 训练过程需要读取大量小文件，checkpoint 会写入大文件，部署推理服务也需要读写大文件，所以文件系统需要同时在大小文件都有好的性能，小文件有更多元数据，对元数据服务要求更高。分布式文件系统还有一个热点是 GPU Direct FS。
+分布式文件系统的挑战 文件系统的元数据组成一棵树，分布式文件系统的挑战之一是怎么存储和高性能读写树。
+常见思路：
+整个树存储在单个节点（主备模式做故障容忍），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈 设计一个可扩展的存储树的系统，把树划分存储到多个节点，百度的文件系统的元数据系统就是这样设计，发过论文 转化成 KV/Table 数据模型存储在 KV/RDB 不采用 Meta &#43; Data 架构，把 Meta 和 Data 混合存储 JuiceFS JuiceFS 是一个基于对象存储的文件系统，被阶跃、小米等公司使用，这篇文章主要是了解 JuiceFS 的设计。
+JuiceFS 是经典的 client-meta-data 架构，采用上面的第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。
+架构：
+app fuse lib --&gt; juicefs --&gt; meta service | | | | | object store --&gt; object storage service syscall /dev/fuse | | | local cache vfs --&gt; fuse 使用：">
+  <meta itemprop="datePublished" content="2025-08-01T19:06:59+08:00">
+  <meta itemprop="dateModified" content="2025-08-01T19:06:59+08:00">
+  <meta itemprop="wordCount" content="495"><meta property="og:url" content="https://cxljs.github.io/posts/juicefs/">
+  <meta property="og:site_name" content="cxljs">
+  <meta property="og:title" content="从源码理解 JuiceFS 的设计">
+  <meta property="og:description" content="分布式文件系统的发展 分布式文件系统的挑战 JuiceFS 文件存储模型 元数据存储模型 VFS Meta Service Chunk Store 一致性 分布式文件系统的发展 Google GFS 是分布式文件系统发展的里程碑，Meta 和 Data 分离的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。
+随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 Neon, AutoMQ, JuiceFS.
+LLM 训练和推理对分布式文件系统的要求和大数据场景不同，LLM 训练过程需要读取大量小文件，checkpoint 会写入大文件，部署推理服务也需要读写大文件，所以文件系统需要同时在大小文件都有好的性能，小文件有更多元数据，对元数据服务要求更高。分布式文件系统还有一个热点是 GPU Direct FS。
+分布式文件系统的挑战 文件系统的元数据组成一棵树，分布式文件系统的挑战之一是怎么存储和高性能读写树。
+常见思路：
+整个树存储在单个节点（主备模式做故障容忍），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈 设计一个可扩展的存储树的系统，把树划分存储到多个节点，百度的文件系统的元数据系统就是这样设计，发过论文 转化成 KV/Table 数据模型存储在 KV/RDB 不采用 Meta &#43; Data 架构，把 Meta 和 Data 混合存储 JuiceFS JuiceFS 是一个基于对象存储的文件系统，被阶跃、小米等公司使用，这篇文章主要是了解 JuiceFS 的设计。
+JuiceFS 是经典的 client-meta-data 架构，采用上面的第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。
+架构：
+app fuse lib --&gt; juicefs --&gt; meta service | | | | | object store --&gt; object storage service syscall /dev/fuse | | | local cache vfs --&gt; fuse 使用：">
+  <meta property="og:locale" content="en_us">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2025-08-01T19:06:59+08:00">
+    <meta property="article:modified_time" content="2025-08-01T19:06:59+08:00">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="从源码理解 JuiceFS 的设计">
+  <meta name="twitter:description" content="分布式文件系统的发展 分布式文件系统的挑战 JuiceFS 文件存储模型 元数据存储模型 VFS Meta Service Chunk Store 一致性 分布式文件系统的发展 Google GFS 是分布式文件系统发展的里程碑，Meta 和 Data 分离的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。
+随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 Neon, AutoMQ, JuiceFS.
+LLM 训练和推理对分布式文件系统的要求和大数据场景不同，LLM 训练过程需要读取大量小文件，checkpoint 会写入大文件，部署推理服务也需要读写大文件，所以文件系统需要同时在大小文件都有好的性能，小文件有更多元数据，对元数据服务要求更高。分布式文件系统还有一个热点是 GPU Direct FS。
+分布式文件系统的挑战 文件系统的元数据组成一棵树，分布式文件系统的挑战之一是怎么存储和高性能读写树。
+常见思路：
+整个树存储在单个节点（主备模式做故障容忍），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈 设计一个可扩展的存储树的系统，把树划分存储到多个节点，百度的文件系统的元数据系统就是这样设计，发过论文 转化成 KV/Table 数据模型存储在 KV/RDB 不采用 Meta &#43; Data 架构，把 Meta 和 Data 混合存储 JuiceFS JuiceFS 是一个基于对象存储的文件系统，被阶跃、小米等公司使用，这篇文章主要是了解 JuiceFS 的设计。
+JuiceFS 是经典的 client-meta-data 架构，采用上面的第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。
+架构：
+app fuse lib --&gt; juicefs --&gt; meta service | | | | | object store --&gt; object storage service syscall /dev/fuse | | | local cache vfs --&gt; fuse 使用：">
+
+  <link rel="canonical" href="https://cxljs.github.io/posts/juicefs/" />
+</head>
+<body
+    class="bg-(--bg) text-black antialiased duration-200 ease-out [-webkit-tap-highlight-color:transparent] dark:text-white"
+  ><header
+  class="mx-auto flex h-[4.5rem] max-w-(--w) px-8 whitespace-nowrap lg:justify-center"
+>
+  <div class="relative z-50 flex items-center ltr:mr-auto rtl:ml-auto">
+    <a
+      class="-translate-y-[1px] text-2xl font-medium"
+      href="https://cxljs.github.io/"
+      >cxljs</a
+    >
+    <div
+      class="btn-dark text-[0px] ltr:ml-4 rtl:mr-4 h-6 w-6 shrink-0 cursor-pointer [background:url(./theme.png)_left_center/_auto_theme('spacing.6')_no-repeat] [transition:_background-position_0.4s_steps(5)] dark:[background-position:right]"
+      role="button"
+      aria-label="Dark"
+    ></div>
+  </div>
+
+  <div
+    class="btn-menu relative z-50 flex h-[4.5rem] w-[5rem] shrink-0 cursor-pointer flex-col items-center justify-center gap-2.5 lg:hidden ltr:-mr-8 rtl:-ml-8"
+    role="button"
+    aria-label="Menu"
+  ></div>
+
+  <script>
+    
+    const htmlClass = document.documentElement.classList;
+    setTimeout(() => {
+      htmlClass.remove('not-ready');
+    }, 10);
+
+    
+    const btnMenu = document.querySelector('.btn-menu');
+    btnMenu.addEventListener('click', () => {
+      htmlClass.toggle('open');
+    });
+
+    
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    const lightBg = '#faf8f1'.replace(/"/g, '');
+    const setDark = (isDark) => {
+      metaTheme.setAttribute('content', isDark ? '#000' : lightBg);
+      htmlClass[isDark ? 'add' : 'remove']('dark');
+      localStorage.setItem('dark', isDark);
+    };
+
+    
+    const darkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+    if (htmlClass.contains('dark')) {
+      setDark(true);
+    } else {
+      const darkVal = localStorage.getItem('dark');
+      setDark(darkVal ? darkVal === 'true' : darkScheme.matches);
+    }
+
+    
+    darkScheme.addEventListener('change', (event) => {
+      setDark(event.matches);
+    });
+
+    
+    const btnDark = document.querySelector('.btn-dark');
+    btnDark.addEventListener('click', () => {
+      setDark(localStorage.getItem('dark') !== 'true');
+    });
+  </script>
+
+  <div
+    class="nav-wrapper fixed inset-x-0 top-full z-40 flex h-full flex-col justify-center bg-(--bg) pb-16 duration-200 select-none lg:static lg:h-auto lg:flex-row lg:bg-transparent! lg:pb-0 lg:transition-none"
+  >
+  </div>
+</header>
+<main
+      class="prose prose-neutral dark:prose-invert relative mx-auto min-h-[calc(100vh-9rem)] max-w-(--w) px-8 pt-14 pb-16"
+    ><article>
+  <header class="mb-14">
+    <h1 class="my-0! pb-2.5">从源码理解 JuiceFS 的设计</h1><div class="text-xs antialiased opacity-60"><time>Aug 1, 2025</time></div></header>
+
+  <section><ul>
+<li><a href="#%E5%88%86%E5%B8%83%E5%BC%8F%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%8F%91%E5%B1%95">分布式文件系统的发展</a></li>
+<li><a href="#%E5%88%86%E5%B8%83%E5%BC%8F%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E7%9A%84%E6%8C%91%E6%88%98">分布式文件系统的挑战</a></li>
+<li><a href="#juicefs">JuiceFS</a>
+<ul>
+<li><a href="#%E6%96%87%E4%BB%B6%E5%AD%98%E5%82%A8%E6%A8%A1%E5%9E%8B">文件存储模型</a></li>
+<li><a href="#%E5%85%83%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8%E6%A8%A1%E5%9E%8B">元数据存储模型</a></li>
+<li><a href="#vfs">VFS</a></li>
+<li><a href="#meta-service">Meta Service</a></li>
+<li><a href="#chunk-store">Chunk Store</a></li>
+<li><a href="#%E4%B8%80%E8%87%B4%E6%80%A7">一致性</a></li>
+</ul>
+</li>
+</ul>
+<h1 id="分布式文件系统的发展">分布式文件系统的发展</h1>
+<p>Google GFS 是分布式文件系统发展的里程碑，Meta 和 Data 分离的架构影响了后来的分布式系统设计。随后的 HDFS 是大数据时代最重要的存储系统之一，现在分布式文件系统最流行的2种接口协议是 POSIX 和 HDFS。</p>
+<p>随着云原生和对象存储的发展，数据系统的设计趋势是把数据放到对象存储，比如 Neon, AutoMQ, JuiceFS.</p>
+<p>LLM 训练和推理对分布式文件系统的要求和大数据场景不同，LLM 训练过程需要读取大量小文件，checkpoint 会写入大文件，部署推理服务也需要读写大文件，所以文件系统需要同时在大小文件都有好的性能，小文件有更多元数据，对元数据服务要求更高。分布式文件系统还有一个热点是 GPU Direct FS。</p>
+<h1 id="分布式文件系统的挑战">分布式文件系统的挑战</h1>
+<p>文件系统的元数据组成一棵树，分布式文件系统的挑战之一是怎么存储和高性能读写树。</p>
+<p>常见思路：</p>
+<ol>
+<li>整个树存储在单个节点（主备模式做故障容忍），缺点是单节点吞吐量和容量有限，可能会成为系统瓶颈</li>
+<li>设计一个可扩展的存储树的系统，把树划分存储到多个节点，百度的文件系统的元数据系统就是这样设计，发过论文</li>
+<li>转化成 KV/Table 数据模型存储在 KV/RDB</li>
+<li>不采用 Meta + Data 架构，把 Meta 和 Data 混合存储</li>
+</ol>
+<h1 id="juicefs">JuiceFS</h1>
+<p>JuiceFS 是一个基于对象存储的文件系统，被阶跃、小米等公司使用，这篇文章主要是了解 JuiceFS 的设计。</p>
+<p>JuiceFS 是经典的 client-meta-data 架构，采用上面的第3种思路存储元数据，支持 TiKV/MySQL/Etcd/Redis 等多种系统作为 Meta Service，数据放在对象存储，JuiceFS 本身是一个 client 层。</p>
+<p>架构：</p>
+<pre tabindex="0"><code>app        fuse lib  --&gt;  juicefs --&gt; meta service
+ |            |             |
+ |            |         object store --&gt; object storage service
+syscall    /dev/fuse        |
+ |            |          local cache
+vfs    --&gt;   fuse
+</code></pre><p>使用：</p>
+<div class="highlight"><pre tabindex="0" style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#57606a"># 创建一个新文件系统</span>
+</span></span><span style="display:flex;"><span>juicefs format redis://127.0.0.1:6379/1 myjfs
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#57606a"># 挂载</span>
+</span></span><span style="display:flex;"><span>juicefs mount redis://127.0.0.1:6379/1 /tmp/jfs
+</span></span></code></pre></div><h2 id="文件存储模型">文件存储模型</h2>
+<p>如果一个文件作为一个对象去存储，修改文件有严重的写放大，所以需要把文件划分成多个对象去存储。</p>
+<p>为此 JuiceFS 设计了 file-chunk-slice-block 模型：</p>
+<ul>
+<li>文件逻辑上划分成多个 chunk，chunk size = 64MB</li>
+<li>对 chunk 的每次写为一个 slice，slice = (chunk id, offset, size, data)，多次写可能有重叠，所以还要维护 slice 顺序，以最新的为准，跨 chunk 的写会分成多个 slice</li>
+<li>slice 存储到对象存储时被划分成多个 block (block size = 4MB) 并发写入，所以对象存储里的对象是一个个 &lt;= 4MB 的 block</li>
+</ul>
+<p>block 为存储的单位 vs. slice 为存储单位：</p>
+<ul>
+<li>pros.:
+<ul>
+<li>方便并发上传，slice 为单位也可以用 multipart 方式上传，但是有些对象存储不支持 multipart</li>
+<li>方便 slice GC，juicefs 为了避免写放大，修改文件时，juicefs 不是“下载对象-&gt;修改-&gt;重传”，而是直接上传新对象，旧对象直到没有引用时删除，以 block 为单位，能更快删除旧数据</li>
+<li>block size 固定，本地 object cache 的实现更加简洁</li>
+</ul>
+</li>
+<li>cons.:
+<ul>
+<li>更多元数据，对 meta service 压力更大</li>
+</ul>
+</li>
+</ul>
+<p>对象名：<code>${fsname}/chunks/{slice_id/1e6}/{slice_id/1e3}/${basename}</code>:</p>
+<ul>
+<li>fsname: 用户创建文件系统时定义的文件系统名</li>
+<li>hash: 避免单桶成为热点</li>
+<li>basename: 格式是 <code>${slice_id}_${block_index}_${block_size}</code>，block_index 是 block 在 slice 的序号，范围 [0,16)</li>
+</ul>
+<p>多个写重叠会有过期 slice -&gt; 有过期 block，所以需要有删除策略，slices 压缩等设计。</p>
+<p>上面说每次写是一个 slice，实际上由于有 local data cache，JuiceFS 会做一些优化，比如一次写后，slice 还没有上传到对象存储，此时有新的写操作和它重叠或连续，会直接修改它，不创建新 slice。</p>
+<h2 id="元数据存储模型">元数据存储模型</h2>
+<p>JuiceFS 需要维护的元数据：</p>
+<ul>
+<li>系统元数据</li>
+<li>各种计数值：下个可用的 inode id / slice id / session id / &amp;c</li>
+<li>session: client id, client info 和超时时间</li>
+<li>inode attr：type, size, nlink, uid, parent inode id, &amp;c</li>
+<li>file inode data (chunks): (inode id, chunk index) -&gt; []sliceMeta</li>
+<li>dir inode data：(dir inode id, child inode name) -&gt; (child inode type, child inode id)</li>
+<li>plock: (inode, session id, owner) -&gt; []plock record</li>
+<li>&hellip;</li>
+</ul>
+<p>JuiceFS 需要设计合理的数据模型，把元数据放到 TiKV/MySQL/Redis 等系统。</p>
+<p>在 Redis 的数据模型：</p>
+<ul>
+<li>系统元数据：string KV ：<code>setting</code> -&gt; json string</li>
+<li>各种计数值：string KV ：<code>nextInode</code> -&gt; num, <code>nextSliceId</code> -&gt; num, &amp;c</li>
+<li>session
+<ul>
+<li>session timeout: <code>allSessions</code> -&gt; a sorted set {member: client id, score: timeout timestamp}</li>
+<li>session info: <code>sessionInfos</code> -&gt; a hash table {client id -&gt; json string}</li>
+</ul>
+</li>
+<li>inode attr: string KV: <code>i${inode_id}</code> -&gt; 二进制编码的 attr struct</li>
+<li>chunk: <code>c${inode_id}_{chunk_index}</code> -&gt; a list {二进制编码的 sliceMeta struct}</li>
+<li>dir: <code>d${inode_id}</code> -&gt; a hash table {child inode name -&gt; 二进制编码的 (inode_type, inode_id)}</li>
+<li>&hellip;</li>
+</ul>
+<p>用只有 KV API 的系统作为 Meta Service 时，JuiceFS 的做法是 string KV 不变，hash table 等数据结构把 key 和 field 拼接成一个 key：</p>
+<ul>
+<li>系统元数据：<code>setting</code> -&gt; json string</li>
+<li>session
+<ul>
+<li><code>SE${client_id}</code> -&gt; timeout timestamp</li>
+<li><code>SI${client_id}</code> -&gt; json string</li>
+</ul>
+</li>
+<li>inode attr: <code>A${inode_id}I</code> -&gt; 二进制编码的 attr struct</li>
+<li>chunk: <code>A${inode_id}C${chunk_index}</code> -&gt; 二进制编码的 sliceMeta array</li>
+<li>dir: <code>A${inode_id}D${name}</code> -&gt; 二进制编码的 (inode_type, inode_id)</li>
+<li>&hellip;</li>
+</ul>
+<p>key 的具体拼接细节没有保持一致，但无伤大雅。</p>
+<p>用数据库作为 Meta Service，元数据分成多个表存放。</p>
+<p>以读文件数据为例，流程：</p>
+<ol>
+<li>root inode id = 1, 沿着文件路径找到 inode_id, file size(in attr struct)</li>
+<li>计算要读的 chunk_index, 获取 []sliceMeta</li>
+<li>计算要读的位置在哪些 slices 以及在 slice 内的 index，<code>${slice_id}_${block_index}_${block_size}</code> 读取 block，拼接数据</li>
+</ol>
+<h2 id="vfs">VFS</h2>
+<p>vfs 从文件系统的视角，实现文件系统语义，维护需要的元数据，client 租约等。</p>
+<p>写文件时，数据和元数据在两个系统，JuiceFS 的设计是先写数据、再写元数据，以元数据成功写到 Meta Service 作为 commit point.</p>
+<p>文件系统语义，Reader 和 Writer 的实现有很多细节，具体看代码。</p>
+<h2 id="meta-service">Meta Service</h2>
+<p>要求 Meta Service 具备事务能力，Redis 的话是使用 watch + multi/exec 实现乐观锁。</p>
+<h2 id="chunk-store">Chunk Store</h2>
+<p>chunk store API 的设计很好，不需要理解 file-chunk-slice-block 模型，从 chunk store 的视角，它负责维护多条线段，每条线段会作为一个对象上传到对象存储：</p>
+<ul>
+<li>用户写就是告诉它在哪条线段的哪个位置写入数据，线段存储在内存，由用户自己决定上传到对象存储的时机</li>
+<li>用户读会从本地 cache 找，找不到再从对象存储读</li>
+</ul>
+<p>实现主要考虑：</p>
+<ul>
+<li>对象存储到磁盘的模式，JuiceFS 采用 file-per-block, 也就是每个对象和他的 crc 作为一个文件</li>
+<li>预读策略</li>
+<li>上传和下载对象的并发限制</li>
+</ul>
+<p>我没有太详细地看代码，只看了大概，然后假设我来设计 chunk store 我会怎么设计，再和 JuiceFS 的设计对比，主要区别：file-per-block 的模式，当缓存大量对象时，会在本地产生大量文件，我会采用 n 个大文件，每个大文件切分成多个部分，每个部分放一个对象，并用 bitmap 维护每个文件的空闲部分。</p>
+<h2 id="一致性">一致性</h2>
+<p>close-to-open + 时间租约，不想写了。</p>
+</section>
+
+  <nav
+    class="mt-24 flex overflow-hidden rounded-xl bg-black/[3%] text-lg leading-[1.2]! *:flex *:w-1/2 *:items-center *:p-5 *:font-medium *:no-underline dark:bg-white/[8%] [&>*:hover]:bg-black/[2%] dark:[&>*:hover]:bg-white/[3%]"
+  ><a
+      class="justify-end pl-3 ltr:ml-auto rtl:mr-auto"
+      href="https://cxljs.github.io/posts/leveldb-1-wal/"
+      ><span>LevelDB #1 WAL</span><span class="ltr:ml-1.5 rtl:mr-1.5">→</span></a
+    ></nav></article></main><footer
+  class="mx-auto flex h-[4.5rem] max-w-(--w) items-center px-8 text-xs tracking-wider uppercase opacity-60"
+>
+  <div class="mr-auto">&copy;2026<a class="link" href="https://cxljs.github.io/">cxljs</a></div>
+  <a class="link mx-6" href="https://gohugo.io/" rel="noopener" target="_blank"
+    >powered by hugo️️</a
+  >️
+  <a
+    class="link"
+    href="https://github.com/nanxiaobei/hugo-paper"
+    rel="noopener"
+    target="_blank"
+    >hugo-paper</a
+  >
+</footer>
+</body>
+</html>
